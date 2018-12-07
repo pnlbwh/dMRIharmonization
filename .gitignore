@@ -1,0 +1,8 @@
+# Compiled source #
+###################
+
+*.pyc
+.idea
+.bak
+__pycache__/
+test_data/
