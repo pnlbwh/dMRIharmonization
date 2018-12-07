@@ -29,10 +29,12 @@ def applyXform(inImg, refImg, warp, trans, outImg):
         ] & FG
 
 
-def warp_bands(dtiPath, rishPath, maskPath, templatePath, prefix, N_shm, diffusionMeasures):
+# def warp_bands(dtiPath, rishPath, maskPath, templatePath, N_shm, diffusionMeasures):
+def warp_bands(imgPath, maskPath, templatePath, N_shm, diffusionMeasures):
 
-    dir_bak = os.getcwd()
+    # dir_bak = os.getcwd()
 
+    prefix= os.path.basename(imgPath).split('.')[0]
     warp = glob(os.path.join(templatePath, prefix + f'_{dm}*[!Inverse]Warp.nii.gz'))
     trans = glob(os.path.join(templatePath, prefix + f'_{dm}*GenericAffine.mat'))
 
@@ -44,26 +46,25 @@ def warp_bands(dtiPath, rishPath, maskPath, templatePath, prefix, N_shm, diffusi
 
 
     # warping the rish features
-    os.chdir(rishPath)
-
+    # os.chdir(rishPath)
     for i in range(0, N_shm, 2):
-        applyXform(os.path.join(prefix+f'_L{i}.nii.gz'),
+        applyXform(modifiedFile(imgPath, 'harm', f'_L{i}.nii.gz'),
                    os.path.join(templatePath, 'template0.nii.gz'),
                    warp, trans,
-                   prefix+f'_WarpedL{i}.nii.gz')
+                   modifiedFile(imgPath, 'harm', f'_WarpedL{i}.nii.gz'))
 
 
 
     # warping the diffusion measures
-    os.chdir(dtiPath)
+    # os.chdir(dtiPath)
     for dm in diffusionMeasures:
-        applyXform(os.path.join(prefix+f'_{dm}.nii.gz'),
+        applyXform(modifiedFile(imgPath, 'dti', f'_{dm}.nii.gz'),
                    os.path.join(templatePath, 'template0.nii.gz'),
                    warp, trans,
-                   prefix+f'_Warped{dm}.nii.gz')
+                   modifiedFile(imgPath, 'dti', f'_Warped{dm}.nii.gz'))
 
 
-    os.chdir(dir_bak)
+    # os.chdir(dir_bak)
 
 
 def antsMult(caselist, outPrefix):
@@ -86,9 +87,7 @@ def modifiedFile(file, subDir, ext):
     return os.path.join(os.path.dirname(file), subDir, prefix+ext)
 
 
-def site_stat(siteName, imgs, masks, templatePath, diffusionMeasures):
-
-    templateAffine= load_nifti(os.path.join(templatePath, 'template0.nii.gz'))[1]
+def dti_stat(siteName, imgs, masks, templatePath, templateAffine, diffusionMeasures):
 
     maskData = []
     for mask in masks:

@@ -5,7 +5,12 @@ from distutils.spawn import find_executable
 import os, warnings, shutil
 from dti import dti
 from rish import rish
-from template import difference_calc
+from template import difference_calc, antsMult, warp_bands, dti_stat, rish_stat, template_masking
+import warnings
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=FutureWarning)
+
+    from dipy.io.image import load_nifti, save_nifti
 
 def check_csv(file, force):
 
@@ -144,6 +149,8 @@ class pipeline(cli.Application):
         help= 'turn on this flag to harmonize',
         default= False)
 
+    reference= 'reference'
+    target= 'target'
     diffusionMeasures = ['MD', 'FA']
 
     def common_processing(self, caselist):
@@ -176,9 +183,9 @@ class pipeline(cli.Application):
             outPrefix= os.path.join(directory, 'harm', prefix)
             rish(imgPath, maskPath, inPrefix, outPrefix)
 
+        return (imgs, masks)
 
-
-    def createTemplate(self, caselist):
+    def createTemplate(self):
 
         # check directory existence
         check_dir(self.templatePath, self.force)
@@ -186,25 +193,46 @@ class pipeline(cli.Application):
         # create extended caselist
         template_csv(self.ref_csv, self.target_csv, self.templatePath)
 
-        self.common_processing(os.path.join(self.templatePath, 'antsMultCaselist.txt'))
+        imgs, masks= self.common_processing(os.path.join(self.templatePath, 'antsMultCaselist.txt'))
 
-        # readRefImgs
-        # readTargetImgs
-        # createTemplate
-        # antsMult
+        # createTemplate steps
+
+        # read image lists
+        refImgs, refMasks= read_caselist(self.ref_csv)
+        targetImgs, targetMasks= read_caselist(self.target_csv)
+
+        # run ANTS multivariate template construction
+        antsMult(os.path.join(self.templatePath, 'antsMultCaselist.txt'), self.templatePath)
+
+
         # load templateAffine
-        # applyXform
-        # warpMask
-        # templateMask
-        # dti_stat
-        # rish_stat
-        # difference_calc
+        templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]
 
-        difference_calc('reference', 'target', refImgs, targetImgs, self.templatePath, templateAffine,
+        # warp mask, dti, and rish bands
+        for imgPath, maskPath in (imgs, masks):
+            warp_bands(imgPath, maskPath, self.templatePath, self.N_shm, self.diffusionMeasures)
+
+
+        # dti statistics mean, std(FA, MD) calculation
+        refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateAffine, self.diffusionMeasures)
+        targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateAffine, self.diffusionMeasures)
+
+        # masking dti statistics
+        _= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.reference, self.diffusionMeasures)
+        templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target, self.diffusionMeasures)
+
+        # rish_statistics mean, std(L{i}) calculation
+        rish_stat(self.reference, imgs, self.templatePath, templateAffine, self.N_shm)
+        rish_stat(self.target, imgs, self.templatePath, templateAffine, self.N_shm)
+
+        # difference calculation
+        difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
                         'dti', templateMask, self.diffusionMeasures, self.travelHeads)
 
-        difference_calc('reference', 'target', refImgs, targetImgs, self.templatePath, templateAffine,
+        difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
                         'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm, 2)], self.travelHeads)
+
+
 
 
     def harmonizeData(self):
@@ -219,7 +247,7 @@ class pipeline(cli.Application):
 
         self.common_processing(self.target_csv)
 
-        # cleanOutliers
+        # cleanOutliers steps
 
 
     def sanityCheck(self):
