@@ -83,6 +83,20 @@ def check_dir(path, force):
     else:
         raise IsADirectoryError(f'{path} exists, use --force to overwrite or delete existing directory')
 
+def dti_harm(imgPath, maskPath, N_shm):
+
+    directory = os.path.dirname(imgPath)
+    inPrefix = imgPath.split('.')[0]
+    prefix = os.path.split(inPrefix)[-1]
+
+    outPrefix = os.path.join(directory, 'dti', prefix)
+    dti(imgPath, maskPath, inPrefix, outPrefix)
+
+    outPrefix = os.path.join(directory, 'harm', prefix)
+    b0, shm_coeff, fit_matrix= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
+
+    return (b0, shm_coeff, fit_matrix)
+
 
 class pipeline(cli.Application):
 
@@ -179,17 +193,7 @@ class pipeline(cli.Application):
 
 
         for imgPath, maskPath in (imgs, masks):
-            # dti_harm(imgPath, maskPath, self.N_shm)
-
-            directory= os.path.dirname(imgPath)
-            inPrefix= imgPath.split('.')[0]
-            prefix= os.path.split(inPrefix)[-1]
-
-            outPrefix= os.path.join(directory, 'dti', prefix)
-            dti(imgPath, maskPath, inPrefix, outPrefix)
-
-            outPrefix= os.path.join(directory, 'harm', prefix)
-            rish(imgPath, maskPath, inPrefix, outPrefix, self.N_shm)
+            dti_harm(imgPath, maskPath, self.N_shm)
 
         return (imgs, masks)
 
@@ -253,7 +257,7 @@ class pipeline(cli.Application):
                 raise ValueError(f'{self.templatePath} is empty')
 
 
-        self.common_processing(self.target_csv)
+        # self.common_processing(self.target_csv)
 
         # cleanOutliers steps
 
@@ -265,24 +269,18 @@ class pipeline(cli.Application):
             directory= os.path.dirname(imgPath)
             inPrefix= imgPath.split('.')[0]
             prefix= os.path.split(inPrefix)[-1]
-            outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
+            
+            b0, shm_coeff, fit_matrix= dti_harm(imgPath, maskPath, self.N_shm)
 
+            outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
             antsReg(imgPath, maskPath, moving, outPrefix)
             antsApply(self.templatePath, directory, prefix, self.N_shm)
 
-            # optimize the following so you don't have to compute rish feature twice
-            outPrefix= os.path.join(directory, 'harm', prefix)
-            shm_coeff, fit_matrix= rish(imgPath, maskPath, inPrefix, outPrefix, self.N_shm)
-
             # harmonize the rish features
-            mappedFile= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, fit_matrix)
+            mappedFile= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, fit_matrix, b0)
             outPrefix= os.path.join(directory, 'harm', 'rish', prefix)
             rish(mappedFile, maskPath, inPrefix, outPrefix, self.N_shm)
 
-            # un-normalize harmonized data
-            # load b0
-            # multiply by b0
-            # save result
 
     def sanityCheck(self):
 
