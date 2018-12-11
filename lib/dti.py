@@ -9,12 +9,12 @@ with warnings.catch_warnings():
     from dipy.reconst.odf import gfa
     from dipy.segment.mask import applymask
 
-def dti(imgPath, maskPath, prefix, outPrefix):
+def dti(imgPath, maskPath, inPrefix, outPrefix):
 
     dtifit['-k', imgPath,
            '-m', maskPath,
-           '-r', prefix+'.bvec',
-           '-b', prefix+'.bval',
+           '-r', inPrefix+'.bvec',
+           '-b', inPrefix+'.bval',
            '-o', outPrefix
             ] & FG
 

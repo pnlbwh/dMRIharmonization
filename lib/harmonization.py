@@ -5,12 +5,15 @@ from distutils.spawn import find_executable
 import os, warnings, shutil
 from dti import dti
 from rish import rish
-from template import difference_calc, antsMult, warp_bands, dti_stat, rish_stat, template_masking
+from buildTemplate import difference_calc, antsMult, warp_bands, dti_stat, rish_stat, template_masking
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
 
     from dipy.io.image import load_nifti, save_nifti
+    from dipy.reconst.shm import normalize_data
+
+from cleanOutliers import antsReg, antsApply, ring_masking
 
 def check_csv(file, force):
 
@@ -33,6 +36,9 @@ def check_csv(file, force):
 
                     harmPath= os.path.join(os.path.dirname(img),'harm')
                     check_dir(harmPath, force)
+
+                    rishPath= os.path.join(os.path.dirname(img),'harm', 'rish')
+                    check_dir(rishPath, force)
 
 
 
@@ -173,6 +179,8 @@ class pipeline(cli.Application):
 
 
         for imgPath, maskPath in (imgs, masks):
+            # dti_harm(imgPath, maskPath, self.N_shm)
+
             directory= os.path.dirname(imgPath)
             inPrefix= imgPath.split('.')[0]
             prefix= os.path.split(inPrefix)[-1]
@@ -181,7 +189,7 @@ class pipeline(cli.Application):
             dti(imgPath, maskPath, inPrefix, outPrefix)
 
             outPrefix= os.path.join(directory, 'harm', prefix)
-            rish(imgPath, maskPath, inPrefix, outPrefix)
+            rish(imgPath, maskPath, inPrefix, outPrefix, self.N_shm)
 
         return (imgs, masks)
 
@@ -249,6 +257,32 @@ class pipeline(cli.Application):
 
         # cleanOutliers steps
 
+        # read target image list
+        moving= load_nifti(os.path.join(self.templatePath, self.target+ '_FA.nii.gz'))
+        imgs, masks= read_caselist(self.target_csv)
+        for imgPath, maskPath in (imgs, masks):
+
+            directory= os.path.dirname(imgPath)
+            inPrefix= imgPath.split('.')[0]
+            prefix= os.path.split(inPrefix)[-1]
+            outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
+
+            antsReg(imgPath, maskPath, moving, outPrefix)
+            antsApply(self.templatePath, directory, prefix, self.N_shm)
+
+            # optimize the following so you don't have to compute rish feature twice
+            outPrefix= os.path.join(directory, 'harm', prefix)
+            shm_coeff, fit_matrix= rish(imgPath, maskPath, inPrefix, outPrefix, self.N_shm)
+
+            # harmonize the rish features
+            mappedFile= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, fit_matrix)
+            outPrefix= os.path.join(directory, 'harm', 'rish', prefix)
+            rish(mappedFile, maskPath, inPrefix, outPrefix, self.N_shm)
+
+            # un-normalize harmonized data
+            # load b0
+            # multiply by b0
+            # save result
 
     def sanityCheck(self):
 
