@@ -21,7 +21,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm):
 
     # save baseline image
     b0 = data[..., qb_model.where_b0].mean(-1)
-    save_nifti(inPrefix+'_b0.nii.gz', b0, affine= affine)
+    save_nifti(inPrefix+'_bse.nii.gz', b0, affine= affine)
 
     qb_fit = qb_model.fit(data, mask_data)
     shm_coeff= qb_fit.shm_coeff
@@ -33,7 +33,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm):
     for i in range(0, N_shm+1, 2):
         ind= int(i/2)
         temp= np.sum(shm_coeff_squared[:,:,:,shs_same_level[ind][0]:shs_same_level[ind][1]], axis= 3)
-        save_nifti(f'{outPrefix}_{ind*2}.nii.gz', temp, affine, None)
+        save_nifti(f'{outPrefix}_{ind*2}.nii.gz', temp, affine)
 
         # rishImgs[:, :, :, i]= temp
 

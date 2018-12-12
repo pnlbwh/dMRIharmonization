@@ -22,7 +22,7 @@ def dti(imgPath, maskPath, inPrefix, outPrefix):
     mask, _= load_nifti(maskPath)
     masked_vol= applymask(vol, mask)
     gfa_vol= gfa(masked_vol)
-    save_nifti(outPrefix+'_GFA.nii.gz', gfa_vol, affine, None)
+    save_nifti(outPrefix+'_GFA.nii.gz', gfa_vol, affine)
 
 
 def main():

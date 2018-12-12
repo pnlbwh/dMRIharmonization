@@ -28,10 +28,10 @@ def antsApply(templatePath, directory, prefix, N_shm):
     for i in range(0, N_shm, 2):
         moving= os.path.join(templatePath, f'Scale_L{i}.nii.gz')
         # pass os.path.join(directory,harm)
-        fixed= os.path.join(directory, 'harm', f'Scale_L{i}.nii.gz')
-        output= os.path.join(directory, 'harm', f'Scale_L{i}_{prefix}.nii.gz')
-        warp= os.path.join(directory, 'harm', f'ToSubjectSpace_{prefix}1Warp.nii.gz')
-        trans= os.path.join(directory, 'harm', f'ToSubjectSpace_{prefix}0GenericAffine.mat')
+        fixed= os.path.join(directory, f'Scale_L{i}.nii.gz')
+        output= os.path.join(directory, f'Scale_L{i}_{prefix}.nii.gz')
+        warp= os.path.join(directory, f'ToSubjectSpace_{prefix}1Warp.nii.gz')
+        trans= os.path.join(directory, f'ToSubjectSpace_{prefix}0GenericAffine.mat')
 
         applyXform(moving, fixed, warp, trans, output)
 
@@ -59,7 +59,7 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, fit_matrix, b0):
             mask*= mask_scale
 
             n_zero= 20
-            se= generate_binary_structure(n_zero)
+            se= generate_binary_structure(n_zero, 1)
             maskTmp= np.pad(mask, (n_zero, n_zero, n_zero), 'constant', constant_values= 0.)
 
             dilM = binary_dilation(maskTmp, se)
