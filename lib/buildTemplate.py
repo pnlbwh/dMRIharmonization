@@ -3,7 +3,7 @@
 import numpy as np
 from subprocess import check_call
 from plumbum.cmd import antsApplyTransforms
-from plumbum.cmd import FG
+from plumbum import FG
 import psutil, os
 N_CPU= psutil.cpu_count()
 from glob import glob
@@ -13,10 +13,15 @@ with warnings.catch_warnings():
     from dipy.io.image import load_nifti, save_nifti
     from dipy.segment.mask import applymask
 
-
 from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.ndimage.filters import gaussian_filter
 eps= 2.2204e-16
+
+
+def modifiedFile(file, subDir, ext):
+    prefix= os.path.basename(file).split('.')[0]
+    return os.path.join(os.path.dirname(file), subDir, prefix+ext)
+
 
 def applyXform(inImg, refImg, warp, trans, outImg):
 
@@ -32,39 +37,44 @@ def applyXform(inImg, refImg, warp, trans, outImg):
 # def warp_bands(dtiPath, rishPath, maskPath, templatePath, N_shm, diffusionMeasures):
 def warp_bands(imgPath, maskPath, templatePath, N_shm, diffusionMeasures):
 
-    # dir_bak = os.getcwd()
-
     prefix= os.path.basename(imgPath).split('.')[0]
-    warp = glob(os.path.join(templatePath, prefix + f'_{dm}*[!Inverse]Warp.nii.gz'))
-    trans = glob(os.path.join(templatePath, prefix + f'_{dm}*GenericAffine.mat'))
+    directory= os.path.dirname(imgPath)
+    warp = glob(os.path.join(templatePath, prefix + f'_FA*[!Inverse]Warp.nii.gz'))
+    trans = glob(os.path.join(templatePath, prefix + f'_FA*GenericAffine.mat'))
 
     # warping the mask
     applyXform(maskPath,
                os.path.join(templatePath, 'template0.nii.gz'),
                warp, trans,
-               str(maskPath).split('.')[0]+ 'Warped.nii.gz')
+               maskPath.split('.')[0]+ 'Warped.nii.gz')
 
 
     # warping the rish features
-    # os.chdir(rishPath)
-    for i in range(0, N_shm, 2):
-        applyXform(modifiedFile(imgPath, 'harm', f'_L{i}.nii.gz'),
-                   os.path.join(templatePath, 'template0.nii.gz'),
-                   warp, trans,
-                   modifiedFile(imgPath, 'harm', f'_WarpedL{i}.nii.gz'))
-
+    for i in range(0, N_shm+1, 2):
+        applyXform(os.path.join(directory, 'harm', f'{prefix}_L{i}.nii.gz'),
+           os.path.join(templatePath, 'template0.nii.gz'),
+           warp, trans,
+           os.path.join(directory, 'harm', f'{prefix}_WarpedL{i}.nii.gz'))
 
 
     # warping the diffusion measures
-    # os.chdir(dtiPath)
     for dm in diffusionMeasures:
-        applyXform(modifiedFile(imgPath, 'dti', f'_{dm}.nii.gz'),
+        applyXform(os.path.join(directory, 'dti', f'{prefix}_{dm}.nii.gz'),
                    os.path.join(templatePath, 'template0.nii.gz'),
                    warp, trans,
-                   modifiedFile(imgPath, 'dti', f'_Warped{dm}.nii.gz'))
+                   os.path.join(directory, 'dti', f'{prefix}_Warped{dm}.nii.gz'))
 
 
-    # os.chdir(dir_bak)
+def createAntsCaselist(imgs, file):
+
+    with open(file,'w') as f:
+        for imgPath in imgs:
+            prefix= os.path.basename(imgPath).split('.')[0]
+            directory= os.path.dirname(imgPath)
+
+            FA= os.path.join(directory,'dti', f'{prefix}_FA.nii.gz')
+            L0= os.path.join(directory,'harm', f'{prefix}_L0.nii.gz')
+            f.write(f'{FA},{L0}\n')
 
 
 def antsMult(caselist, outPrefix):
@@ -82,64 +92,48 @@ def antsMult(caselist, outPrefix):
                            caselist]), shell= True)
 
 
-def modifiedFile(file, subDir, ext):
-    prefix= os.path.basename(file).split('.')[0]
-    return os.path.join(os.path.dirname(file), subDir, prefix+ext)
-
 
 def dti_stat(siteName, imgs, masks, templatePath, templateAffine, diffusionMeasures):
 
     maskData = []
-    for mask in masks:
-        maskData.append(load_nifti(modifiedFile(mask, 'harm', 'Warped.nii.gz'))[0])
+    for maskPath in masks:
+        maskData.append(load_nifti(maskPath.split('.')[0]+ 'Warped.nii.gz')[0])
 
-    morphed_mask= binary_opening(np.mean(maskData, axis=0)>0.5, structure= generate_binary_structure(3,1))
+    morphed_mask= binary_opening(np.mean(maskData, axis= 0)>0.5, structure= generate_binary_structure(3,1))*1
     morphed_mask_name= os.path.join(templatePath, f'{siteName}_Mask.nii.gz')
-    save_nifti(morphed_mask_name, morphed_mask, templateAffine, None)
+    save_nifti(morphed_mask_name, morphed_mask, templateAffine)
 
     imgData= []
     for dm in diffusionMeasures:
-        for img in imgs:
-            imgData.append(load_nifti(modifiedFile(img, 'dti', f'_Warped{dm}.nii.gz'))[0])
+        for imgPath in imgs:
+            prefix = os.path.basename(imgPath).split('.')[0]
+            directory = os.path.dirname(imgPath)
+            imgData.append(load_nifti(os.path.join(directory, 'dti', f'{prefix}_Warped{dm}.nii.gz'))[0])
 
         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_{dm}.nii.gz'),
-                                np.mean(imgData), templateAffine, None)
+                                np.mean(imgData, axis= 0), templateAffine)
 
         save_nifti(os.path.join(templatePath, f'Std_{siteName}_{dm}.nii.gz'),
-                                np.std(imgData), templateAffine, None)
+                                np.std(imgData, axis= 0), templateAffine)
 
     return morphed_mask_name
 
 
 
-# extns= diffusionMeasures
-# extns= [f'L{i}' for i in range(0, N_shm, 2)]
-
-# def mean_std_calc(imgs, subDir, extns, templatePath):
-#     imgData= []
-#     for dm in diffusionMeasures:
-#         for img in imgs:
-#             imgData.append(load_nifti(modifiedFile(img, subDir, f'_Warped{ext}.nii.gz'))[0])
-#
-#         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_Warped{dm}.nii.gz'),
-#                                 np.mean(imgData), templateAffine, None)
-#
-#         save_nifti(os.path.join(templatePath, f'Std_{siteName}_Warped{dm}.nii.gz'),
-#                                 np.std(imgData), templateAffine, None)
-
-
 def rish_stat(siteName, imgs, templatePath, templateAffine, N_shm):
 
-    for i in range(0, N_shm, 2):
+    for i in range(0, N_shm+1, 2):
         imgData= []
-        for img in imgs:
-            imgData.append(load_nifti(modifiedFile(img, 'harm', f'_WarpedL{i}.nii.gz'))[0])
+        for imgPath in imgs:
+            prefix = os.path.basename(imgPath).split('.')[0]
+            directory = os.path.dirname(imgPath)
+            imgData.append(load_nifti(os.path.join(directory, 'harm', f'{prefix}_WarpedL{i}.nii.gz'))[0])
 
         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_L{i}.nii.gz'),
-                            np.mean(imgData), templateAffine, None)
+                            np.mean(imgData, axis= 0), templateAffine)
 
         save_nifti(os.path.join(templatePath, f'Std_{siteName}_L{i}.nii.gz'),
-                            np.std(imgData), templateAffine, None)
+                            np.std(imgData, axis= 0), templateAffine)
 
 
 def template_masking(refMaskPath, targetMaskPath, templatePath, siteName, diffusionMeasures):
@@ -152,13 +146,13 @@ def template_masking(refMaskPath, targetMaskPath, templatePath, siteName, diffus
                templateMask, affine)
 
     for dm in diffusionMeasures:
-        fileName= os.path.join(templatePath, f'Mean_{siteName}_Warped{dm}.nii.gz')
+        fileName= os.path.join(templatePath, f'Mean_{siteName}_{dm}.nii.gz')
         imgData, affine= load_nifti(fileName)
-        save_nifti(fileName, applymask(imgData, templateMask), affine, None)
+        save_nifti(fileName, applymask(imgData, templateMask), affine)
 
-        fileName= os.path.join(templatePath, f'Std_{siteName}_Warped{dm}.nii.gz')
+        fileName= os.path.join(templatePath, f'Std_{siteName}_{dm}.nii.gz')
         imgData, affine= load_nifti(fileName)
-        save_nifti(fileName, applymask(imgData, templateMask), affine, None)
+        save_nifti(fileName, applymask(imgData, templateMask), affine)
 
 
     return templateMask
@@ -190,14 +184,6 @@ def stat_calc(ref, target, mask):
     return (delta, per_diff, per_diff_smooth, scale)
 
 
-# call once for dti:
-# difference_calc('reference', 'target', refImgs, targetImgs, templatePath, templateAffine,
-#                 'dti', templateMask, diffusionMeasures, travelHeads)
-
-# call again for rish:
-# difference_calc('reference', 'target', refImgs, targetImgs, templatePath, templateAffine,
-#                 'harm', templateMask, [f'L{i}' for i in range(0, N_shm, 2)], travelHeads)
-
 def difference_calc(refSite, targetSite, refImgs, targetImgs,
                     templatePath, templateAffine, subDir, mask, measures, travelHeads):
 
@@ -215,11 +201,19 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
     '''
 
     for dm in measures:
-        delta=[], per_diff=[], per_diff_smooth= [], scale= []
+        delta=[]
+        per_diff=[]
+        per_diff_smooth= []
+        scale= []
         if travelHeads:
-            for refImg, targetImg in (refImgs, targetImgs):
-                ref= load_nifti(modifiedFile(refImg, subDir, f'_Warped{dm}.nii.gz'))[0]
-                target= load_nifti(modifiedFile(targetImg, subDir, f'_Warped{dm}.nii.gz'))[0]
+            for refImg, targetImg in zip(refImgs, targetImgs):
+                prefix = os.path.basename(refImg).split('.')[0]
+                directory = os.path.dirname(refImg)
+                ref= load_nifti(os.path.join(directory, subDir, f'{prefix}_Warped{dm}.nii.gz'))[0]
+
+                prefix = os.path.basename(targetImg).split('.')[0]
+                directory = os.path.dirname(targetImg)
+                target= load_nifti(os.path.join(directory, subDir, f'{prefix}_Warped{dm}.nii.gz'))[0]
 
                 temp= stat_calc(ref, target, mask)
                 delta.append(temp[0])
@@ -241,16 +235,16 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
             scale.append(temp[3])
 
         save_nifti(os.path.join(templatePath, f'Delta_{dm}.nii.gz'),
-                   delta, templateAffine)
+                   np.mean(delta, axis= 0), templateAffine)
 
         save_nifti(os.path.join(templatePath, f'PercentageDiff_{dm}.nii.gz'),
-                   per_diff, templateAffine)
+                   np.mean(per_diff, axis= 0), templateAffine)
 
         save_nifti(os.path.join(templatePath, f'PercentageDiff_{dm}smooth.nii.gz'),
-                   per_diff_smooth, templateAffine)
+                   np.mean(per_diff_smooth, axis= 0), templateAffine)
 
         save_nifti(os.path.join(templatePath, f'Scale_{dm}.nii.gz'),
-                   scale, templateAffine)
+                   np.sqrt(np.mean(scale, axis= 0)), templateAffine)
 
 
 

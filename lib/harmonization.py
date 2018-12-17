@@ -2,10 +2,11 @@
 
 from plumbum import cli
 from distutils.spawn import find_executable
-import os, warnings, shutil
+import os, shutil
 from dti import dti
 from rish import rish
-from buildTemplate import difference_calc, antsMult, warp_bands, dti_stat, rish_stat, template_masking
+from buildTemplate import difference_calc, antsMult, warp_bands, \
+    dti_stat, rish_stat, template_masking, createAntsCaselist
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -14,6 +15,7 @@ with warnings.catch_warnings():
     from dipy.reconst.shm import normalize_data
 
 from cleanOutliers import antsReg, antsApply, ring_masking
+eps= 2.2204e-16
 
 def check_csv(file, force):
 
@@ -37,31 +39,42 @@ def check_csv(file, force):
                     harmPath= os.path.join(os.path.dirname(img),'harm')
                     check_dir(harmPath, force)
 
-                    rishPath= os.path.join(os.path.dirname(img),'harm', 'rish')
-                    check_dir(rishPath, force)
+                    # rishPath= os.path.join(os.path.dirname(img),'harm', 'rish')
+                    # check_dir(rishPath, force)
 
+
+def check_dir(path, force):
+    if os.path.exists(path) and force:
+        warnings.warn(f'{path} exists and will be overwritten')
+        shutil.rmtree(path)
+        os.makedirs(path)
+    elif not os.path.exists(path):
+        os.makedirs(path)
+    else:
+        raise IsADirectoryError(f'{path} exists, use --force to overwrite or delete existing directory')
 
 
 def read_caselist(file):
 
     with open(file) as f:
-        content= f.read()
 
-        imgs= [], masks= []
+        imgs = []
+        masks = []
+        content= f.read()
         for line, row in enumerate(content.split()):
             temp= [element for element in row.split(',') if element] # handling w/space
             imgs.append(temp[0])
             masks.append(temp[1])
 
-    return imgs, masks
-
+        return (imgs, masks)
 
 
 def template_csv(file1, file2, templatePath):
 
     f1 = open(file1)
     f2 = open(file2)
-    f3 = open(os.path.join(templatePath,'antsMultCaselist.txt'), 'w')
+    file3= os.path.join(templatePath,'ref_target_caselist.txt')
+    f3 = open(file3, 'w')
 
     content = f1.read()+f2.read()
 
@@ -71,17 +84,8 @@ def template_csv(file1, file2, templatePath):
     f2.close()
     f3.close()
 
+    return file3
 
-def check_dir(path, force):
-
-    if os.path.exists(path) and force:
-        warnings.warn(f'{path} exists and will be overwritten')
-        shutil.rmtree(path)
-        os.makedirs(path)
-    elif not os.path.exists(path):
-        os.makedirs(path)
-    else:
-        raise IsADirectoryError(f'{path} exists, use --force to overwrite or delete existing directory')
 
 def dti_harm(imgPath, maskPath, N_shm):
 
@@ -93,9 +97,9 @@ def dti_harm(imgPath, maskPath, N_shm):
     dti(imgPath, maskPath, inPrefix, outPrefix)
 
     outPrefix = os.path.join(directory, 'harm', prefix)
-    b0, shm_coeff, fit_matrix= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
+    b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
 
-    return (b0, shm_coeff, fit_matrix)
+    return (b0, shm_coeff, qb_model)
 
 
 class pipeline(cli.Application):
@@ -105,13 +109,13 @@ class pipeline(cli.Application):
     ref_csv = cli.SwitchAttr(
         ['--reference'],
         cli.ExistingFile,
-        help='csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
+        help='reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
         mandatory=False)
 
     target_csv = cli.SwitchAttr(
         ['--target'],
         cli.ExistingFile,
-        help='csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
+        help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
         mandatory=True)
 
     templatePath = cli.SwitchAttr(
@@ -151,7 +155,7 @@ class pipeline(cli.Application):
 
     bvalMap = cli.Flag(
         '--bvalMap',
-        help='turn on this flag to remap the bvalues',
+        help='turn on this flag to remap the b values',
         default= False)
 
     denoise = cli.Flag(
@@ -182,17 +186,17 @@ class pipeline(cli.Application):
         # rish
         # dti
 
-        if self.denoise:
-            self.denoiseImg()
+        # if self.denoise:
+        #     self.denoiseImg()
+        #
+        # if self.bvalMap:
+        #     self.mapBvals()
+        #
+        # if self.resample():
+        #     self.resampleImg()
 
-        if self.bvalMap:
-            self.mapBvals()
 
-        if self.resample():
-            self.resampleImg()
-
-
-        for imgPath, maskPath in (imgs, masks):
+        for imgPath, maskPath in zip(imgs, masks):
             dti_harm(imgPath, maskPath, self.N_shm)
 
         return (imgs, masks)
@@ -203,9 +207,10 @@ class pipeline(cli.Application):
         check_dir(self.templatePath, self.force)
 
         # create extended caselist
-        template_csv(self.ref_csv, self.target_csv, self.templatePath)
+        allCaselist= template_csv(self.ref_csv, self.target_csv, self.templatePath)
 
-        imgs, masks= self.common_processing(os.path.join(self.templatePath, 'antsMultCaselist.txt'))
+        # decouple getting imgs and masks so we don't have to do processing again and again
+        imgs, masks= self.common_processing(allCaselist)
 
         # createTemplate steps
 
@@ -213,15 +218,17 @@ class pipeline(cli.Application):
         refImgs, refMasks= read_caselist(self.ref_csv)
         targetImgs, targetMasks= read_caselist(self.target_csv)
 
+        # create caselist for antsMult
+        antsMultCaselist= os.path.join(self.templatePath, 'antsMultCaselist.txt')
+        createAntsCaselist(imgs, antsMultCaselist)
         # run ANTS multivariate template construction
-        antsMult(os.path.join(self.templatePath, 'antsMultCaselist.txt'), self.templatePath)
-
+        antsMult(antsMultCaselist, self.templatePath)
 
         # load templateAffine
         templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]
 
         # warp mask, dti, and rish bands
-        for imgPath, maskPath in (imgs, masks):
+        for imgPath, maskPath in zip(imgs, masks):
             warp_bands(imgPath, maskPath, self.templatePath, self.N_shm, self.diffusionMeasures)
 
 
@@ -242,7 +249,7 @@ class pipeline(cli.Application):
                         'dti', templateMask, self.diffusionMeasures, self.travelHeads)
 
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
-                        'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm, 2)], self.travelHeads)
+                        'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)], self.travelHeads)
 
 
 
@@ -250,7 +257,7 @@ class pipeline(cli.Application):
     def harmonizeData(self):
 
         # check the templatePath
-        if os.path.exists(self.templatePath):
+        if not os.path.exists(self.templatePath):
             raise NotADirectoryError(f'{self.templatePath} does not exist')
         else:
             if not os.listdir(self.templatePath):
@@ -262,24 +269,26 @@ class pipeline(cli.Application):
         # cleanOutliers steps
 
         # read target image list
-        moving= load_nifti(os.path.join(self.templatePath, self.target+ '_FA.nii.gz'))
+        moving= os.path.join(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
         imgs, masks= read_caselist(self.target_csv)
-        for imgPath, maskPath in (imgs, masks):
+        for imgPath, maskPath in zip(imgs, masks):
 
             directory= os.path.dirname(imgPath)
             inPrefix= imgPath.split('.')[0]
             prefix= os.path.split(inPrefix)[-1]
-            
-            b0, shm_coeff, fit_matrix= dti_harm(imgPath, maskPath, self.N_shm)
+
+            b0, shm_coeff, qb_model= dti_harm(imgPath, maskPath, self.N_shm)
 
             outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
-            antsReg(imgPath, maskPath, moving, outPrefix)
-            antsApply(self.templatePath, directory, prefix, self.N_shm)
+            fixed= os.path.join(directory, 'dti', f'{prefix}_FA.nii.gz')
+            antsReg(fixed, maskPath, moving, outPrefix)
+            antsApply(self.templatePath, os.path.join(directory, 'harm'), prefix, self.N_shm)
 
             # harmonize the rish features
-            mappedFile= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, fit_matrix, b0)
-            outPrefix= os.path.join(directory, 'harm', 'rish', prefix)
-            rish(mappedFile, maskPath, inPrefix, outPrefix, self.N_shm)
+
+            mappedFile= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, b0, qb_model)
+            outPrefix= os.path.join(directory, 'harm', f'harmonized_{prefix}')
+            rish(mappedFile, maskPath, inPrefix, outPrefix, self.N_shm, qb_model)
 
 
     def sanityCheck(self):
@@ -309,6 +318,7 @@ class pipeline(cli.Application):
 
     def main(self):
 
+        self.N_shm= int(self.N_shm)
         self.sanityCheck()
 
         if self.create:
@@ -322,15 +332,27 @@ if __name__ == '__main__':
     pipeline.run()
 
 '''
+
+python -m pdb \
 /home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---reference /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/template_debug/CaseList_MultivariateTemplate.csv \
---target /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/template_debug/CaseList_MultivariateTemplate1.txt \
---template /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/abc \
---dti /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/def \
---harm /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/ghi \
---travelHeads \
---resample \
+--N_shm 6 \
+--denoise \
 --force \
---N_shm 6
+--create \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--reference /home/tb571/Downloads/Harmonization-Python/test_data/ref_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
+
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--denoise \
+--force \
+--process \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
 
 '''
