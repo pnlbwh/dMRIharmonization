@@ -7,8 +7,10 @@ with warnings.catch_warnings():
     from dipy.io import read_bvals_bvecs
     from dipy.core.gradients import gradient_table
     from dipy.reconst.shm import QballModel
+    from dipy.segment.mask import applymask
 
 import numpy as np
+eps= 2.2204e-16
 
 def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
@@ -46,5 +48,5 @@ if __name__ == '__main__':
     rish('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz',
         '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz',
         '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/abc/dwi_',
+        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/py_thon/dwi',
          8)
