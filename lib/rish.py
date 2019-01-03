@@ -25,7 +25,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
         # save baseline image
         b0 = data[..., np.where(bvals==0)[0]].mean(-1)
-        save_nifti(inPrefix+'_bse.nii.gz', b0, affine= affine)
+        save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine= affine)
     else:
         b0= None
 
