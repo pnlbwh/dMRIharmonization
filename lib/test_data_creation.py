@@ -91,11 +91,12 @@ if __name__=='__main__':
 A
 
 /home/tb571/Downloads/Harmonization-Python/lib/test_data_creation.py \
---prefix /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/test_a/connect/dwi \
+--prefix /home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_dwi \
 --nifti /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz \
 --bval /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.bval \
 --bvec /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.bvec
 
-bet -i /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/C/prisma/dwi_C_prisma_st_b1200.nii.gz
+bet /home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_dwi.nii.gz \
+/home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_mask -m
 
 '''

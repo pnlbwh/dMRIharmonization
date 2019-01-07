@@ -16,7 +16,7 @@ do
         --bval /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/${c^^}/$s/"dwi_${c^^}_${s}_st_b1200.bval" \
         --bvec /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/${c^^}/$s/"dwi_${c^^}_${s}_st_b1200.bvec"
         bet /home/tb571/Downloads/Harmonization-Python/test_data/test_$c/$s/"${s}_${c}_dwi.nii.gz" \
-        /home/tb571/Downloads/Harmonization-Python/test_data/test_$c/$s/"${s}_${c}_mask.nii.gz"
+        /home/tb571/Downloads/Harmonization-Python/test_data/test_$c/$s/"${s}_${c}" -m
     done
 done
 
