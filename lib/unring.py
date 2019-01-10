@@ -24,19 +24,19 @@ def unring_1D(data, n, numlines, nsh, minW, maxW):
     
     nfac = 1./n
     
-    shifts = np.zeros((1, 2*nsh+1), dytpe= 'int')
+    shifts = np.zeros(2*nsh+1, dtype= 'int')
     shifts[0] = 0
     for j in range(nsh):
         shifts[j+1] = j+1
         shifts[1+nsh+j] = -(j+1)
     
-    TV1arr= np.zeros((1, 2*nsh+1), dtype= 'double')
+    TV1arr= np.zeros(2*nsh+1, dtype= 'float64')
     TV2arr= TV1arr.copy()
     
     for k in range(numlines):
-        p(np.ones(len(sh))*data[n*k], sh)
+        p(data[k*n:(k+1)*n], sh[ :n])
 
-        maxn = n/2-1 if n % 2 else (n-1)/2
+        maxn = int(n/2-1 if n % 2 else (n-1)/2)
         
         for j in range(1, 2*nsh+1):
 
@@ -47,7 +47,7 @@ def unring_1D(data, n, numlines, nsh, minW, maxW):
             sh[j*n] = sh[0]
 
             if not n%2:
-                sh[j*n + n/2] = 0
+                sh[j*n + n//2] = 0
 
             
             for l in range(maxn):
@@ -65,20 +65,20 @@ def unring_1D(data, n, numlines, nsh, minW, maxW):
         
                 
         for j in range(2*nsh+1):
-            sh2= p_inv(np.ones(len(sh))*sh[j*n],np.ones(len(sh))*sh2[j*n])
+            p_inv(sh[j*n:(j+1)*n], sh2[j*n:(j+1)*n])
 
-          for j in range(2*nsh+1):
+            for j in range(2*nsh+1):
 
-            TV1arr[j] = 0
-            TV2arr[j] = 0
-            l= 0
+                TV1arr[j] = 0
+                TV2arr[j] = 0
+                l= 0
 
-            for t in range(minW, maxW):
+                for t in range(minW, maxW):
 
-                TV1arr[j] += abs(sh2[j*n + (l-t+n)%n ].real - sh2[j*n + (l-(t+1)+n)%n ].real)
-                TV1arr[j] += abs(sh2[j*n + (l-t+n)%n ].imag - sh2[j*n + (l-(t+1)+n)%n ].imag)
-                TV2arr[j] += abs(sh2[j*n + (l+t+n)%n ].real - sh2[j*n + (l+(t+1)+n)%n ].real)
-                TV2arr[j] += abs(sh2[j*n + (l+t+n)%n ].imag - sh2[j*n + (l+(t+1)+n)%n ].imag)
+                    TV1arr[j] += abs(sh2[j*n + (l-t+n)%n ].real - sh2[j*n + (l-(t+1)+n)%n ].real)
+                    TV1arr[j] += abs(sh2[j*n + (l-t+n)%n ].imag - sh2[j*n + (l-(t+1)+n)%n ].imag)
+                    TV2arr[j] += abs(sh2[j*n + (l+t+n)%n ].real - sh2[j*n + (l+(t+1)+n)%n ].real)
+                    TV2arr[j] += abs(sh2[j*n + (l+t+n)%n ].imag - sh2[j*n + (l+(t+1)+n)%n ].imag)
 
         
         
@@ -139,8 +139,10 @@ def unring_2d(data1, tmp2, dim_sz, nsh, minW, maxW):
     p_tr = pyfftw.builders.fft2(data2.reshape([dim_sz[0],dim_sz[1]]))
     pinv_tr = pyfftw.builders.ifft2(data2.reshape([dim_sz[0],dim_sz[1]]))
 
-    # p = pyfftw.FFTW(data1.reshape([dim_sz[1],dim_sz[0]]), data1.reshape([dim_sz[1],dim_sz[0]]), direction= 'FFTW_FORWARD', flags= ('FFTW_ESTIMATE,'))
-    # p_inv = pyfftw.FFTW(data1.reshape([dim_sz[1],dim_sz[0]]), tmp1.reshape([dim_sz[1],dim_sz[0]]), direction= 'FFTW_BACKWARD', flags= ('FFTW_ESTIMATE,'))
+    # p = pyfftw.FFTW(data1.reshape([dim_sz[1],dim_sz[0]]), data1.reshape([dim_sz[1],dim_sz[0]]),
+    #                              direction= 'FFTW_FORWARD', flags= ('FFTW_ESTIMATE,'))
+    # p_inv = pyfftw.FFTW(data1.reshape([dim_sz[1],dim_sz[0]]), tmp1.reshape([dim_sz[1],dim_sz[0]]),
+    #                              direction= 'FFTW_BACKWARD', flags= ('FFTW_ESTIMATE,'))
 
     nfac = 1/np.float64(dim_sz[0]*dim_sz[1])
 
@@ -162,8 +164,8 @@ def unring_2d(data1, tmp2, dim_sz, nsh, minW, maxW):
     p_inv(tmp1.reshape([dim_sz[1],dim_sz[0]]), data1.reshape([dim_sz[1],dim_sz[0]]))
     pinv_tr(tmp2.reshape([dim_sz[0],dim_sz[1]]), data2.reshape([dim_sz[0],dim_sz[1]]))
 
-    # data1= unring_1D(data1,dim_sz[0],dim_sz[1],nsh,minW,maxW)
-    # data2= unring_1D(data2,dim_sz[1],dim_sz[0],nsh,minW,maxW)
+    data1= unring_1D(data1,dim_sz[0],dim_sz[1],nsh,minW,maxW)
+    data2= unring_1D(data2,dim_sz[1],dim_sz[0],nsh,minW,maxW)
 
     p(data1.reshape([dim_sz[1],dim_sz[0]]), tmp1.reshape([dim_sz[1],dim_sz[0]]))
     p_tr(data2.reshape([dim_sz[0],dim_sz[1]]), tmp2.reshape([dim_sz[0],dim_sz[1]]))
@@ -191,28 +193,51 @@ def pyFunction(data, params):
         data= data[ :, :, :,np.newaxis]
     dim_sz = np.array(data.shape)
 
-    output_vol= data.copy()
+    output_vol= np.zeros(data.shape)
 
     data_complex = pyfftw.empty_aligned(dim_sz[0]*dim_sz[1], dtype=fftw_complex)
     res_complex = data_complex.copy()
     for t in range(dim_sz[3]):
         for z in range(dim_sz[2]):
+            print(f'Unringing slice {z} of gradient {t} ...')
             for x in range(dim_sz[0]):
                 for y in range(dim_sz[1]):
-                    data_complex[dim_sz[0] * y + x] = complex(data[x, y, z, t],0)
+                    data_complex[dim_sz[0] * y + x] = complex(data[y, x, z, t],0)
 
             res_complex= unring_2d(data_complex, res_complex, dim_sz, nsh, minW, maxW)
             for x in range(dim_sz[0]):
                 for y in range(dim_sz[1]):
-                    output_vol[x, y, z, t] = res_complex[dim_sz[0] * y + x].real
+                    output_vol[y, x, z, t] = res_complex[dim_sz[0] * y + x].real
 
     return output_vol.squeeze()
 
 if __name__=='__main__':
 
-    data= np.random.randint(0,10,(10,10,5))
+    # data = np.random.randint(0, 10, (10, 10, 5))
+    # params = [1, 3, 20]
+    # pyFunction(data, params)
+
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        from dipy.io.image import load_nifti, save_nifti
+        import nibabel as nib
+
+    lowResImgPath= '/home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_dwi_bse.nii.gz'
+    higResImgPath= lowResImgPath.split('.')[0] + '_py_unringed' + '.nii.gz'
+    data, affine= load_nifti(lowResImgPath)
     params=[1, 3, 20]
-    pyFunction(data, params)
+    unring_data= pyFunction(data, params)
+    save_nifti(higResImgPath, unring_data, affine)
+
+    from subprocess import check_call
+    higResImgPath= lowResImgPath.split('.')[0] + '_cc_unringed' + '.nii.gz'
+    check_call(['unring.a64', lowResImgPath, higResImgPath])
+
+    img= nib.load(higResImgPath)
+    print(img.header)
+    print((img.get_data()-unring_data).sum())
+
 
 
 

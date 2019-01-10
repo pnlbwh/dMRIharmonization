@@ -46,3 +46,19 @@ if __name__=='__main__':
     dwi= bvalMap(dwi, bvals, 300)
     savemat('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/bmap/b_data.mat',{'dwi_mat':dwi})
     save_nifti('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/bmap/dwi.nii.gz', dwi, affine)
+
+    '''
+    # for testing in MATLAB
+        
+    dwPrime= np.random.rand(3*3*5*5).reshape((3,3,5,5))
+    bvals= np.reshape([50, 100, 200, 50, 200], (5,1))
+    bmax= 300
+    ratio= []
+    for b in bvals:
+        ratio.append(bmax/b)
+
+    dwiHat = dwiPrime ** ratio
+    from scipy.io import savemat
+    savemat('test_dwi.mat',{'S':dwiPrime, 'dwiHat':dwiHat, 'b_o':bvals, 'b_n':bmax})
+    
+    '''

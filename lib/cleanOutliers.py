@@ -1,8 +1,7 @@
 from subprocess import check_call
-from buildTemplate import applyXform, modifiedFile
+from buildTemplate import applyXform
 import os
 from skimage.measure import label, regionprops
-import numpy as np
 from rish import rish
 
 import warnings
@@ -39,6 +38,18 @@ def antsApply(templatePath, directory, prefix, N_shm):
         applyXform(moving, fixed, warp, trans, output)
 
 
+def custom_spherical_structure(D):
+    '''Given diameter D, returns a spherical structuring element'''
+
+    sw=(D-1)/2
+    ses2= int(np.ceil(D/2))
+    [y,x,z]= np.meshgrid(np.arange(-sw,sw+1),np.arange(-sw,sw+1),np.arange(-sw,sw+1))
+    m= np.sqrt(x**2 + y**2 + z**2)
+    b= (m <= m[ses2,ses2,D-1])
+
+    return b
+
+
 def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
 
     fit_matrix = qb_model._fit_matrix
@@ -65,7 +76,7 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
             mask*= mask_scale
 
             n_zero= 20
-            se= iterate_structure(generate_binary_structure(3, 1), 10)
+            se= custom_spherical_structure(n_zero)
             maskTmp= np.pad(mask, n_zero, 'constant', constant_values= 0.)
 
             dilM = binary_dilation(maskTmp, se)*1

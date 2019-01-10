@@ -181,6 +181,7 @@ class pipeline(cli.Application):
 
         imgs, masks = read_caselist(caselist)
 
+        # TODO
         # preprocessing
         # dti
         # rish
@@ -195,8 +196,13 @@ class pipeline(cli.Application):
         # if self.resample():
         #     self.resampleImg()
 
+        # need to save a new image from above
+        # modify imgPath and maskPath
+
 
         for imgPath, maskPath in zip(imgs, masks):
+            # TODO
+            # Don't process data if the files exist, use force option
             dti_harm(imgPath, maskPath, self.N_shm)
 
         return (imgs, masks)
