@@ -98,8 +98,8 @@ def denoising(dwi, mask=None):
         vals = vals**2 / N
 
         # debug block
-        if x[nn]== 46 and y[nn]== 42 and z[nn]== 7:
-            print('Wait')
+        # if x[nn]== 46 and y[nn]== 42 and z[nn]== 7:
+        #     print('Wait')
 
         # First estimation of Sigma^2;  Eq 1 from ISMRM presentation
         csum = np.cumsum(vals[::-1])

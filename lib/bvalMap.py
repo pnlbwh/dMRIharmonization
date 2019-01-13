@@ -33,8 +33,9 @@ def bvalMap(dwi, bvals, bmax):
 
     # un-normalize dwi by b0
     dwiNew= applymask(dwiHat, b0)
+    bvalsNew= bvals*bmax/max(bvals)
 
-    return dwiNew
+    return (dwiNew, bvalsNew)
 
 
 if __name__=='__main__':

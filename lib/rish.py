@@ -10,6 +10,7 @@ with warnings.catch_warnings():
     from dipy.segment.mask import applymask
 
 import numpy as np
+import os
 eps= 2.2204e-16
 
 def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
@@ -18,6 +19,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
     mask_data, _= load_nifti(maskPath)
 
     if not qb_model:
+        print('Computing shm_coeff of ', imgPath)
         bvals, bvecs = read_bvals_bvecs(inPrefix+'.bval', inPrefix+'.bvec')
 
         gtab = gradient_table(bvals,  bvecs)
@@ -25,7 +27,8 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
         # save baseline image
         b0 = data[..., np.where(bvals==0)[0]].mean(-1)
-        save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine= affine)
+        if not os.path.exists(inPrefix+'_bse.nii.gz'):
+            save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine= affine)
     else:
         b0= None
 
@@ -41,6 +44,9 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
         save_nifti(f'{outPrefix}_L{ind*2}.nii.gz', temp, affine)
 
         # rishImgs[:, :, :, i]= temp
+
+    if b0 is not None:
+        np.savez(inPrefix, b0= b0, shm_coeff= shm_coeff, qb_model= qb_model)
 
     return (b0, shm_coeff, qb_model)
 

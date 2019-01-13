@@ -11,6 +11,7 @@ with warnings.catch_warnings():
 
 def dti(imgPath, maskPath, inPrefix, outPrefix):
 
+    print('dtifit ', imgPath)
     dtifit['-k', imgPath,
            '-m', maskPath,
            '-r', inPrefix+'.bvec',

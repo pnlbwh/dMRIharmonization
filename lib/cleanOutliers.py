@@ -109,9 +109,6 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
     save_nifti(mappedFile, S_hat, affine= affine)
 
     # un-normalize harmonized data
-    # load b0
-    # multiply by b0
-    # save result
     S_hat_dwi= applymask(S_hat, b0) # overriding applymask function with a nonbinary mask b0
 
     # place b0s in proper indices
@@ -137,4 +134,5 @@ def stack_b0(bvals, dwi, b0):
             S_hat_final.append(dwi[:,:,:,j])
             j+=1
 
-    return np.moveaxis(S_hat_final, 0, -1)
+    return np.moveaxis(np.array(S_hat_final), 0, -1)
+
