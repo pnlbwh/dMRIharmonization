@@ -200,58 +200,41 @@ class pipeline(cli.Application):
 
         lowResImg = applymask(lowResImg, lowResMask)
 
-        # directory = os.path.dirname(imgPath)
         inPrefix = imgPath.split('.')[0]
-        # prefix = os.path.split(inPrefix)[-1]
 
         bvals, _ = read_bvals_bvecs(inPrefix + '.bval', None)
 
         # pre-processing -------------------------------------------------------------------------------------------
-
+        suffix= None
         # modifies data only
-        suffix = '_denoised'
-        imgPath = inPrefix + suffix + '.nii.gz'
-        fileExist= os.path.exists(imgPath)
-        if self.denoise and (not fileExist or (fileExist and self.force)):
+        if self.denoise:
             print('Denoising ', imgPath)
             lowResImg, _ = denoising(lowResImg, lowResMask)
-            # suffix = '_denoised'
+            suffix = '_denoised'
             # save_nifti(imgPath.split('.')[0]+'_denoised.nii.gz', lowResImg, lowResImgHdr.affine)
-        elif fileExist and not self.force:
-            raise FileExistsError(f'Denoised {imgPath} exists, use --force to overwrite or delete existing directory')
 
         # modifies data, and bvals
-        suffix = '_bmapped'
-        imgPath = inPrefix + suffix + '.nii.gz'
-        fileExist= os.path.exists(imgPath)
-        if self.bvalMap and (not fileExist or (fileExist and self.force)):
+        if self.bvalMap:
             print('B value mapping ', imgPath)
             lowResImg, bvals = bvalMap(lowResImg, bvals, float(self.bvalMap))
-            # suffix = '_bmapped'
-            # write_bvals(inPrefix + suffix + '.bval', bvals)
+            suffix = '_bmapped'
             # save_nifti(imgPath.split('.')[0]+'_bmapped.nii.gz', lowResImg, lowResImgHdr.affine)
-        elif fileExist and not self.force:
-            raise FileExistsError(f'B value mapped {imgPath} exists, use --force to overwrite or delete existing directory')
 
         # modifies data, mask, and headers
-        suffix = '_resampled'
-        imgPath = inPrefix + suffix + '.nii.gz'
-        fileExist= os.path.exists(imgPath)
-        if self.resample and (not fileExist or (fileExist and self.force)):
+        if self.resample:
             print('Resampling ', imgPath)
             sp_high = np.array([float(i) for i in self.resample.split('x')])
             imgPath, maskPath = \
                 resampling(imgPath, maskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals)
-            # suffix = '_resampled'
-        elif fileExist and not self.force:
-            raise FileExistsError(f'Resampled {imgPath} exists, use --force to overwrite or delete existing directory')
+            suffix = '_resampled'
 
         # save pre-processed data; resampled data is saved inside resampling() -------------------------------------
         if (self.denoise or self.bvalMap) and not self.resample:
             imgPath = inPrefix + suffix + '.nii.gz'
-            save_nifti(imgPath, lowResImg, lowResImgHdr.affine)
+            save_nifti(imgPath, lowResImg, lowResImgHdr.get_qform())
 
-        shutil.copyfile(inPrefix + '.bvec', inPrefix + suffix + '.bvec')
+        if suffix:
+            shutil.copyfile(inPrefix + '.bvec', inPrefix + suffix + '.bvec')
         if self.bvalMap:
             write_bvals(inPrefix + suffix + '.bval', bvals)
         elif self.denoise or self.resample:
@@ -266,6 +249,7 @@ class pipeline(cli.Application):
         imgs, masks = read_caselist(caselist)
         f= open(caselist+'.modified', 'w')
 
+        # TODO: parellelize
         for i in range(len(imgs)):
 
             imgs[i], masks[i]= self.preprocessing(imgs[i], masks[i])
@@ -307,6 +291,7 @@ class pipeline(cli.Application):
         # targetImgs, targetMasks= self.common_processing(self.target_csv)
         self.target_csv+='.modified'
         targetImgs, targetMasks = read_caselist(self.target_csv)
+
         imgs= refImgs+targetImgs
         masks= refMasks+targetMasks
 
@@ -320,6 +305,7 @@ class pipeline(cli.Application):
         templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]
 
         # warp mask, dti, and rish bands
+        # TODO: parellelize
         for imgPath, maskPath in zip(imgs, masks):
             warp_bands(imgPath, maskPath, self.templatePath, self.N_shm, self.diffusionMeasures)
 
@@ -361,32 +347,22 @@ class pipeline(cli.Application):
                 raise ValueError(f'{self.templatePath} is empty')
 
         # go through each file listed in csv, check their existence, create dti and harm directories
-        # check_csv(self.target_csv, self.force)
-
-        # self.common_processing(self.target_csv)
+        check_csv(self.target_csv, self.force)
 
         # cleanOutliers steps ------------------------------------------------------------------------------------------
 
         # read target image list
-        self.target_csv += '.modified'
         moving= os.path.join(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
         imgs, masks= read_caselist(self.target_csv)
+        # TODO: parellelize
         for imgPath, maskPath in zip(imgs, masks):
+
+            imgPath, maskPath = self.preprocessing(imgPath, maskPath)
+            b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath, self.N_shm)
 
             directory= os.path.dirname(imgPath)
             inPrefix= imgPath.split('.')[0]
             prefix= os.path.split(inPrefix)[-1]
-
-            b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath, self.N_shm)
-
-            # if self.force or not os.path.exists(inPrefix+'.npz'):
-            #     imgPath, maskPath= self.preprocessing(imgPath, maskPath)
-            #     b0, shm_coeff, qb_model= dti_harm(imgPath, maskPath, self.N_shm)
-            # else:
-            #     content= np.load(inPrefix+'.npz')
-            #     b0= content['b0']
-            #     shm_coeff= content['shm_coeff']
-            #     qb_model= content['qb_model']
 
             print(f'Registering {imgPath} FA to subject space ...')
             outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
@@ -421,9 +397,9 @@ class pipeline(cli.Application):
 
 
         # go through each file listed in csv, check their existence, create dti and harm directories
-        # if self.ref_csv:
-        #     check_csv(self.ref_csv, self.force)
-        # check_csv(self.target_csv, self.force)
+        if self.ref_csv:
+            check_csv(self.ref_csv, self.force)
+        check_csv(self.target_csv, self.force)
 
 
 
@@ -458,15 +434,69 @@ python -m pdb \
 --travelHeads
 
 
+Harmonization tests:
+
 python -m pdb \
 /home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
 --N_shm 6 \
 --denoise \
---resample 1.5x1.5x1.5 \
 --bvalMap 1000 \
+--force \
 --process \
 --target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
 --template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
 --travelHeads
 
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--resample 1.5x1.5x1.5 \
+--bvalMap 1000 \
+--force \
+--process \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--denoise \
+--resample 1.5x1.5x1.5 \
+--force \
+--process \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--resample 1.5x1.5x1.5 \
+--force \
+--process \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--denoise \
+--force \
+--process \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--bvalMap 1000 \
+--force \
+--process \
+--target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
+--template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
+--travelHeads
 '''

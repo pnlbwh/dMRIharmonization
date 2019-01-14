@@ -92,7 +92,7 @@ def antsMult(caselist, outPrefix):
                            caselist]), shell= True)
 
 
-
+# TODO: parallelize
 def dti_stat(siteName, imgs, masks, templatePath, templateAffine, diffusionMeasures):
 
     maskData = []
@@ -119,7 +119,7 @@ def dti_stat(siteName, imgs, masks, templatePath, templateAffine, diffusionMeasu
     return morphed_mask_name
 
 
-
+# TODO: parellelize
 def rish_stat(siteName, imgs, templatePath, templateAffine, N_shm):
 
     for i in range(0, N_shm+1, 2):
@@ -206,6 +206,7 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         per_diff_smooth= []
         scale= []
         if travelHeads:
+            # TODO: parellelize
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
                 directory = os.path.dirname(refImg)
