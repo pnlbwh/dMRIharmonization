@@ -183,8 +183,8 @@ class pipeline(cli.Application):
         help= 'turn on this flag to harmonize',
         default= False)
 
-    reference= 'reference'
-    target= 'target'
+    reference= 'CIDAR'
+    target= 'BSNIP'
     diffusionMeasures = ['MD', 'FA']
 
     def preprocessing(self, imgPath, maskPath):
@@ -214,9 +214,10 @@ class pipeline(cli.Application):
             # save_nifti(imgPath.split('.')[0]+'_denoised.nii.gz', lowResImg, lowResImgHdr.affine)
 
         # modifies data, and bvals
-        if self.bvalMap:
+        newBval= float(self.bvalMap)
+        if self.bvalMap and (max(bvals)>1.01*newBval or max(bvals)<0.99*newBval):
             print('B value mapping ', imgPath)
-            lowResImg, bvals = bvalMap(lowResImg, bvals, float(self.bvalMap))
+            lowResImg, bvals = bvalMap(lowResImg, bvals, newBval)
             suffix = '_bmapped'
             # save_nifti(imgPath.split('.')[0]+'_bmapped.nii.gz', lowResImg, lowResImgHdr.affine)
 
@@ -267,39 +268,33 @@ class pipeline(cli.Application):
     def createTemplate(self):
 
         # go through each file listed in csv, check their existence, create dti and harm directories
-        # if self.ref_csv:
-        #     check_csv(self.ref_csv, self.force)
+        if self.ref_csv:
+            check_csv(self.ref_csv, self.force)
 
         # check directory existence
-        # check_dir(self.templatePath, self.force)
-
-        # dtifit and rish feature
-        # imgs, masks= self.common_processing(allCaselist)
-        # debug: use the following line to omit processing again
-        # imgs, masks= read_caselist(self.ref_csv)
-
-        # create extended caselist
-        # allCaselist= template_csv(self.ref_csv, self.target_csv, self.templatePath)
+        check_dir(self.templatePath, self.force)
 
         # createTemplate steps -----------------------------------------------------------------------------------------
 
         # read image lists
-        # refImgs, refMasks= self.common_processing(self.ref_csv)
-        self.ref_csv+='.modified'
-        refImgs, refMasks = read_caselist(self.ref_csv)
+        refImgs, refMasks= self.common_processing(self.ref_csv)
+        # debug: use the following lines to omit processing again
+        # self.ref_csv+='.modified'
+        # refImgs, refMasks = read_caselist(self.ref_csv)
 
-        # targetImgs, targetMasks= self.common_processing(self.target_csv)
-        self.target_csv+='.modified'
-        targetImgs, targetMasks = read_caselist(self.target_csv)
+        targetImgs, targetMasks= self.common_processing(self.target_csv)
+        # debug: use the following line to omit processing again
+        # self.target_csv+='.modified'
+        # targetImgs, targetMasks = read_caselist(self.target_csv)
 
         imgs= refImgs+targetImgs
         masks= refMasks+targetMasks
 
         # create caselist for antsMult
-        # antsMultCaselist= os.path.join(self.templatePath, 'antsMultCaselist.txt')
-        # createAntsCaselist(imgs, antsMultCaselist)
-        # # run ANTS multivariate template construction
-        # antsMult(antsMultCaselist, self.templatePath)
+        antsMultCaselist= os.path.join(self.templatePath, 'antsMultCaselist.txt')
+        createAntsCaselist(imgs, antsMultCaselist)
+        # run ANTS multivariate template construction
+        antsMult(antsMultCaselist, self.templatePath)
 
         # load templateAffine
         templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]

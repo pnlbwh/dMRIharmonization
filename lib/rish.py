@@ -45,8 +45,6 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
         # rishImgs[:, :, :, i]= temp
 
-    if b0 is not None:
-        np.savez(inPrefix, b0= b0, shm_coeff= shm_coeff, qb_model= qb_model)
 
     return (b0, shm_coeff, qb_model)
 
