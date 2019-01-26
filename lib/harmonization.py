@@ -6,7 +6,8 @@ import os, shutil
 from dti import dti
 from rish import rish
 from buildTemplate import difference_calc, antsMult, warp_bands, \
-    dti_stat, rish_stat, template_masking, createAntsCaselist
+    dti_stat, rish_stat, template_masking, createAntsCaselist, \
+    read_caselist
 from denoising import denoising
 from bvalMap import bvalMap
 from resampling import resampling
@@ -20,6 +21,7 @@ with warnings.catch_warnings():
     from nibabel import load
 
 from cleanOutliers import antsReg, antsApply, ring_masking
+from debug_fa import sub2tmp2mni, analyzeStat
 import numpy as np
 
 def check_csv(file, force):
@@ -32,11 +34,12 @@ def check_csv(file, force):
             if len(dwi_mask) != 2:
                 raise FileNotFoundError(f'Columns don\'t have same number of entries: check line {line} in {file}')
 
+            dirCheckFlag= 1
             for img in dwi_mask:
                 if not os.path.exists(img):
                     raise FileNotFoundError(f'{img} does not exist: check line {line} in {file}')
 
-                else:
+                elif dirCheckFlag:
                     # create DTI and harmonization directory
                     dtiPath= os.path.join(os.path.dirname(img),'dti')
                     check_dir(dtiPath, force)
@@ -47,6 +50,8 @@ def check_csv(file, force):
                     # rishPath= os.path.join(os.path.dirname(img), 'harm', 'rish')
                     # check_dir(rishPath, force)
 
+                    dirCheckFlag= 0
+
 
 def check_dir(path, force):
     if os.path.exists(path) and force:
@@ -56,22 +61,8 @@ def check_dir(path, force):
     elif not os.path.exists(path):
         os.makedirs(path)
     else:
-        raise IsADirectoryError(f'{path} exists, use --force to overwrite or delete existing directory')
+        warnings.warn(f'{path} exists, --force not specified, continuing with existing directory')
 
-
-def read_caselist(file):
-
-    with open(file) as f:
-
-        imgs = []
-        masks = []
-        content= f.read()
-        for line, row in enumerate(content.split()):
-            temp= [element for element in row.split(',') if element] # handling w/space
-            imgs.append(temp[0])
-            masks.append(temp[1])
-
-        return (imgs, masks)
 
 
 # def template_csv(file1, file2, templatePath):
@@ -99,7 +90,10 @@ def dti_harm(imgPath, maskPath, N_shm):
     prefix = os.path.split(inPrefix)[-1]
 
     outPrefix = os.path.join(directory, 'dti', prefix)
-    dti(imgPath, maskPath, inPrefix, outPrefix)
+
+    # if the dti output exists with the same prefix, don't dtifit again
+    if not os.path.exists(outPrefix+'_FA.nii.gz'):
+        dti(imgPath, maskPath, inPrefix, outPrefix)
 
     outPrefix = os.path.join(directory, 'harm', prefix)
     b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
@@ -127,6 +121,12 @@ class pipeline(cli.Application):
         cli.ExistingFile,
         help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
         mandatory=True)
+
+    harm_csv = cli.SwitchAttr(
+        ['--harmonized'],
+        cli.ExistingFile,
+        help='harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
+        mandatory=False)
 
     templatePath = cli.SwitchAttr(
         ['--template'],
@@ -183,8 +183,21 @@ class pipeline(cli.Application):
         help= 'turn on this flag to harmonize',
         default= False)
 
-    reference= 'CIDAR'
-    target= 'BSNIP'
+    debug = cli.Flag(
+        '--debug',
+        help= 'turn on this flag to debug harmonized data (valid only with --process)',
+        default= False)
+
+    reference = cli.SwitchAttr(
+        '--refName',
+        help= 'reference site name',
+        mandatory= True)
+
+    target = cli.SwitchAttr(
+        '--targetName',
+        help= 'target site name',
+        mandatory= True)
+
     diffusionMeasures = ['MD', 'FA']
 
     def preprocessing(self, imgPath, maskPath):
@@ -254,9 +267,7 @@ class pipeline(cli.Application):
         for i in range(len(imgs)):
 
             imgs[i], masks[i]= self.preprocessing(imgs[i], masks[i])
-
             dti_harm(imgs[i], masks[i], self.N_shm)
-
             f.write(f'{imgs[i]},{masks[i]}\n')
 
         f.close()
@@ -267,24 +278,26 @@ class pipeline(cli.Application):
 
     def createTemplate(self):
 
-        # go through each file listed in csv, check their existence, create dti and harm directories
-        if self.ref_csv:
-            check_csv(self.ref_csv, self.force)
-
         # check directory existence
         check_dir(self.templatePath, self.force)
+
+        # go through each file listed in csv, check their existence, create dti and harm directories
+        check_csv(self.ref_csv, self.force)
+        check_csv(self.target_csv, self.force)
 
         # createTemplate steps -----------------------------------------------------------------------------------------
 
         # read image lists
         refImgs, refMasks= self.common_processing(self.ref_csv)
-        # debug: use the following lines to omit processing again
-        # self.ref_csv+='.modified'
+        if not self.ref_csv.endswith('.modified'):
+            self.ref_csv += '.modified'
+        # debug: use the following line to omit processing again
         # refImgs, refMasks = read_caselist(self.ref_csv)
 
         targetImgs, targetMasks= self.common_processing(self.target_csv)
+        if not self.target_csv.endswith('.modified'):
+            self.target_csv += '.modified'
         # debug: use the following line to omit processing again
-        # self.target_csv+='.modified'
         # targetImgs, targetMasks = read_caselist(self.target_csv)
 
         imgs= refImgs+targetImgs
@@ -349,35 +362,81 @@ class pipeline(cli.Application):
         # read target image list
         moving= os.path.join(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
         imgs, masks= read_caselist(self.target_csv)
+
+        preFlag= 1 # omit preprocessing of target data again
+        if self.target_csv.endswith('.modified'):
+            preFlag= 0
+        else:
+            # this file will be used later for debugging
+            self.target_csv += '.modified'
+            fm = open(self.target_csv, 'w')
+
+
         # TODO: parellelize
+        self.harm_csv= self.target_csv+'.harmonized'
+        fh= open(self.harm_csv, 'w')
         for imgPath, maskPath in zip(imgs, masks):
 
-            imgPath, maskPath = self.preprocessing(imgPath, maskPath)
+            if preFlag:
+                imgPath, maskPath = self.preprocessing(imgPath, maskPath)
+                fm.write(imgPath + ',' + maskPath + '\n')
+
             b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath, self.N_shm)
 
             directory= os.path.dirname(imgPath)
             inPrefix= imgPath.split('.')[0]
             prefix= os.path.split(inPrefix)[-1]
 
-            print(f'Registering {imgPath} FA to subject space ...')
+            print(f'Registering template FA to {imgPath} space ...')
             outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
             fixed= os.path.join(directory, 'dti', f'{prefix}_FA.nii.gz')
             antsReg(fixed, maskPath, moving, outPrefix)
             antsApply(self.templatePath, os.path.join(directory, 'harm'), prefix, self.N_shm)
 
             print(f'Harmonizing {imgPath} rish features ...')
-            mappedFile= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, b0, qb_model)
-            outPrefix= os.path.join(directory, 'harm', f'harmonized_{prefix}')
-            rish(mappedFile, maskPath, inPrefix, outPrefix, self.N_shm, qb_model)
+            harmImg, harmMask= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, b0, qb_model)
+            fh.write(harmImg+','+harmMask+'\n')
 
+            shutil.copyfile(inPrefix + '.bvec', harmImg.split('.')[0] + '.bvec')
+            shutil.copyfile(inPrefix + '.bval', harmImg.split('.')[0] + '.bval')
+
+            if self.debug:
+                dti_harm(harmImg, harmMask, self.N_shm)
+            # The rest shouldn't be necessary
+            # outPrefix= os.path.join(directory, 'harm', f'harmonized_{prefix}')
+            # rish(harmFile, maskPath, inPrefix, outPrefix, self.N_shm, qb_model)
+
+        if preFlag:
+            fm.close()
+        fh.close()
         print('\n\nHarmonization completed\n\n')
+
+
+    def post_debug(self):
+
+        print('\n\n Reference site')
+        sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, self.diffusionMeasures)
+        ref_mean = analyzeStat(self.ref_csv)
+
+        print('\n\n Target site before harmonization')
+        sub2tmp2mni(self.templatePath, self.target, self.target_csv, self.diffusionMeasures)
+        target_mean_before = analyzeStat(self.target_csv)
+
+        print('\n\n Target site after harmonization')
+        sub2tmp2mni(self.templatePath, self.target, self.harm_csv, self.diffusionMeasures)
+        target_mean_after = analyzeStat(self.harm_csv)
+
+        print('\n\nPrinting statistics :')
+        print(f'{self.reference} mean FA: ', np.mean(ref_mean))
+        print(f'{self.target} mean FA before harmonization: ', np.mean(target_mean_before))
+        print(f'{self.target} mean FA after harmonization: ', np.mean(target_mean_after))
 
 
     def sanityCheck(self):
 
-        if not (self.create or self.process):
+        if not (self.create or self.process or self.debug):
             raise AttributeError('No option selected, ' 
-                                'specify either creation and/or harmonization flag')
+                                'specify one (or many of) creation, harmonization, and debug flags')
 
         # check ants commands
         external_commands= [
@@ -392,9 +451,9 @@ class pipeline(cli.Application):
 
 
         # go through each file listed in csv, check their existence, create dti and harm directories
-        if self.ref_csv:
-            check_csv(self.ref_csv, self.force)
-        check_csv(self.target_csv, self.force)
+        # if self.ref_csv:
+        #     check_csv(self.ref_csv, self.force)
+        # check_csv(self.target_csv, self.force)
 
 
 
@@ -408,6 +467,9 @@ class pipeline(cli.Application):
 
         if self.process:
             self.harmonizeData()
+
+        if self.debug:
+            self.post_debug()
 
 
 if __name__ == '__main__':
@@ -494,4 +556,42 @@ python -m pdb \
 --target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
 --template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
 --travelHeads
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--resample 1.5x1.5x1.5 \
+--bvalMap 1000 \
+--target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified \
+--reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt.modified \
+--refName CIDAR \
+--targetName BSNIP \
+--template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
+--process \
+--debug
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt.modified \
+--target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified \
+--harmonized /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified.harmonized \
+--refName CIDAR \
+--targetName BSNIP \
+--template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
+--debug
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--resample 1.5x1.5x1.5 \
+--bvalMap 1000 \
+--target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt \
+--reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt \
+--refName CIDAR \
+--targetName BSNIP \
+--template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
+--create \
+--process \
+--debug \
+--force
 '''

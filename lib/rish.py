@@ -18,6 +18,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
     data, affine= load_nifti(imgPath)
     mask_data, _= load_nifti(maskPath)
 
+    # the if condition shouldn't be necessary
     if not qb_model:
         print('Computing shm_coeff of ', imgPath)
         bvals, bvecs = read_bvals_bvecs(inPrefix+'.bval', inPrefix+'.bvec')
@@ -53,4 +54,4 @@ if __name__ == '__main__':
         '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz',
         '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200',
         '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/py_thon/dwi',
-         8)
+         6)

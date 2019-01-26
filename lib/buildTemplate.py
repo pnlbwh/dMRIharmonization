@@ -17,6 +17,20 @@ from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.ndimage.filters import gaussian_filter
 eps= 2.2204e-16
 
+def read_caselist(file):
+
+    with open(file) as f:
+
+        imgs = []
+        masks = []
+        content= f.read()
+        for line, row in enumerate(content.split()):
+            temp= [element for element in row.split(',') if element] # handling w/space
+            imgs.append(temp[0])
+            masks.append(temp[1])
+
+        return (imgs, masks)
+
 
 def modifiedFile(file, subDir, ext):
     prefix= os.path.basename(file).split('.')[0]
