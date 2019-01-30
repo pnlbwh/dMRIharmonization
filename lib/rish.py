@@ -6,8 +6,9 @@ with warnings.catch_warnings():
     from dipy.io.image import load_nifti, save_nifti
     from dipy.io import read_bvals_bvecs
     from dipy.core.gradients import gradient_table
-    from dipy.reconst.shm import QballModel
+    from dipy.reconst.shm import QballModel, normalize_data
     from dipy.segment.mask import applymask
+
 
 import numpy as np
 import os
@@ -33,8 +34,22 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
     else:
         b0= None
 
-    qb_fit = qb_model.fit(data, mask_data)
-    shm_coeff= qb_fit.shm_coeff
+    # qb_fit = qb_model.fit(data, mask_data)
+    # shm_coeff= qb_fit.shm_coeff
+
+    # inserting correct shm_coeff computation block ---------------------------------
+    smooth= 0.006
+    data = applymask(data, mask_data)
+    data_norm = normalize_data(data, qb_model._where_b0s)
+    data_norm[data_norm > 1] = 1.
+    data_norm[data_norm < eps] = 0
+
+    L= qb_model.n*(qb_model.n+1)
+    L**=2
+    _fit_matrix= np.linalg.pinv(qb_model.B.T @ qb_model.B+ np.diag(smooth*L)) @ qb_model.B.T
+    shm_coeff= np.dot(data_norm[..., qb_model._where_dwi], _fit_matrix.T)
+    shm_coeff= applymask(shm_coeff, mask_data)
+    # -------------------------------------------------------------------------------
 
     shm_coeff_squared= shm_coeff**2
     shs_same_level= [[0, 1], [1, 6], [6, 15], [15, 28], [28, 45]]
