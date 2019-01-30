@@ -57,6 +57,21 @@ def custom_spherical_structure(D):
     return b
 
 
+def findLargestConnectMask(img, mask):
+
+    mask_scale = label(img > 0.00001, connectivity=1)
+    maxArea = 0
+    for region in regionprops(mask_scale):
+        if region.area > maxArea:
+            maxLabel = region.label
+            maxArea = region.area
+
+    largeConnectMask = (mask_scale == maxLabel)
+    mask *= largeConnectMask
+
+    return mask
+
+
 def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
 
     B = qb_model.B
@@ -73,50 +88,46 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
         mask, _ = load_nifti(maskPath)
 
 
-        # if i==0: # compute the maskRing from 0th shm
-        #     mask_scale= label(img>0.00001, connectivity= 1)
-        #     maxArea= 0
-        #     for region in regionprops(mask_scale):
-        #         if region.area > maxArea:
-        #             maxLabel= region.label
-        #             maxArea= region.area
-        #
-        #     mask_scale= (mask_scale==maxLabel)
-        #     mask*= mask_scale
-        #
-        #     n_zero= 5
-        #     se= custom_spherical_structure(n_zero)
-        #     maskTmp= np.pad(mask, n_zero, 'constant', constant_values= 0.)
-        #
-        #     dilM = binary_dilation(maskTmp, se)*1
-        #     eroM = binary_erosion(maskTmp, se)*1
-        #     maskRing = dilM - eroM
-        #     # save_nifti('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/maskRing.nii.gz',
-        #     #            maskRing, affine)
-        #
-        # img = applymask(img, mask)
-        #
-        # scaleTmp = np.pad(img, n_zero, 'constant', constant_values= 0.)
-        # imgRing = applymask(scaleTmp, maskRing)
-        #
-        # percentile_mask= imgRing>=np.percentile(scaleTmp[maskRing>0], 95)
-        # # roi= applymask(scaleTmp, percentile_mask)
-        # # save_nifti('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/roi.nii.gz',
-        # #            roi, affine)
-        # tmp= median_filter(roi, (5,5,5))
-        # img= tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
-        # save_nifti(fileName, data=img, affine=affine)
-        # # mask_final= maskRing[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
+        if i==0: # compute the skullRingMask from 0th shm
 
-        mask_final= mask
+            mask= findLargestConnectMask(img, mask)
+
+            n_zero= 5
+            se= custom_spherical_structure(n_zero)
+            paddedMask= np.pad(mask, n_zero, 'constant', constant_values= 0.)
+
+            dilM = binary_dilation(paddedMask, se)*1
+            eroM = binary_erosion(paddedMask, se)*1
+            skullRingMask = dilM - eroM
+
+        paddedImg = np.pad(img, n_zero, 'constant', constant_values=0.)
+        skullRing= paddedImg*skullRingMask
+        restImg= paddedImg*(1-skullRingMask)
+
+        denoisedSkullRing= median_filter(skullRing, (5,5,5))
+
+        # multiply denoisedSkullRing by skullRing again to avoid out of ROI inclusion
+        tmp= restImg+denoisedSkullRing*skullRing
+        denoisedImg= tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
+
+
+        # for i=0, create new mask over denoisedImg, save it as harmonzied_{prefix}_mask
+        if i==0:
+            mask_final= findLargestConnectMask(denoisedImg, mask)
+            mask_final= binary_dilation(mask_final, generate_binary_structure(3,1))*1
+            harmMask = os.path.join(directory, f'harmonized_{prefix}_mask.nii.gz')
+            save_nifti(harmMask, mask_final, affine=affine)
+
 
         ind= int(i/2)
         for level in range(shs_same_level[ind][0], shs_same_level[ind][1]):
-            mapped_cs.append(img * shm_coeff[ :,:,:,level])
+            mapped_cs.append(denoisedImg * shm_coeff[ :,:,:,level])
 
 
-    S_hat= np.moveaxis(mapped_cs, 0, -1) @ B.T
-    S_hat[S_hat<0]= 0
+    # FIXME: incorrect product
+    # S_hat= np.moveaxis(mapped_cs, 0, -1) @ B.T
+    S_hat= np.dot(np.moveaxis(mapped_cs, 0, -1), B.T)
+    S_hat[S_hat<eps]= 0
     S_hat[S_hat>1]= 1
 
     # affine= templateAffine for all Scale_L{i}
@@ -128,6 +139,7 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
 
     # place b0s in proper indices
     S_hat_final= stack_b0(bvals, S_hat_dwi, b0)
+    S_hat_final= applymask(S_hat_final, mask_final)
     # S_hat_final= np.concatenate((np.expand_dims(b0, axis=3), S_hat_dwi), axis= 3)
 
 
@@ -135,9 +147,6 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
     harmImg= os.path.join(directory, f'harmonized_{prefix}.nii.gz')
     save_nifti(harmImg, S_hat_final, affine= affine)
 
-    # save mask of harmonized data
-    harmMask = os.path.join(directory, f'harmonized_{prefix}_mask.nii.gz')
-    save_nifti(harmMask, mask_final, affine=affine)
 
     return (harmImg, harmMask)
 
