@@ -3,6 +3,7 @@ from buildTemplate import applyXform
 import os
 from skimage.measure import label, regionprops
 from rish import rish
+from local_med_filter import local_med_filter
 
 import warnings
 with warnings.catch_warnings():
@@ -102,13 +103,16 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
 
         paddedImg = np.pad(img, n_zero, 'constant', constant_values=0.)
         skullRing= paddedImg*skullRingMask
-        restImg= paddedImg*(1-skullRingMask)
+        thresh= np.percentile(skullRing[skullRing>0], 95)
+        outLier= (skullRing>thresh)*1
+        tmp= local_med_filter(paddedImg, outLier)
+        denoisedImg = tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
 
-        denoisedSkullRing= median_filter(skullRing, (5,5,5))
-
-        # multiply denoisedSkullRing by skullRing again to avoid out of ROI inclusion
-        tmp= restImg+denoisedSkullRing*skullRing
-        denoisedImg= tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
+        # restImg= paddedImg*(1-skullRingMask)
+        # denoisedSkullRing= median_filter(skullRing, (5,5,5))
+        # # multiply denoisedSkullRing by skullRing again to avoid out of ROI inclusion
+        # tmp= restImg+denoisedSkullRing*skullRing
+        # denoisedImg= tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
 
 
         # for i=0, create new mask over denoisedImg, save it as harmonzied_{prefix}_mask
