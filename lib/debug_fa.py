@@ -22,8 +22,8 @@ def sub2tmp2mni(templatePath, siteName, caselist, diffusionMeasures):
     outPrefix= os.path.join(templatePath, f'TemplateToMNI_{siteName}')
     warp2mni= outPrefix+'1Warp.nii.gz'
     trans2mni= outPrefix+'0GenericAffine.mat'
-    # if not os.path.exists(warp2mni):
-    antsReg(fixed, None, moving, outPrefix)
+    if not os.path.exists(warp2mni):
+        antsReg(fixed, None, moving, outPrefix)
 
     imgs, _= read_caselist(caselist)
 
