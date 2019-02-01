@@ -65,24 +65,6 @@ def check_dir(path, force):
 
 
 
-# def template_csv(file1, file2, templatePath):
-#
-#     f1 = open(file1)
-#     f2 = open(file2)
-#     file3= os.path.join(templatePath,'ref_target_caselist.txt')
-#     f3 = open(file3, 'w')
-#
-#     content = f1.read()+f2.read()
-#
-#     f3.write(content)
-#
-#     f1.close()
-#     f2.close()
-#     f3.close()
-#
-#     return file3
-
-
 def dti_harm(imgPath, maskPath, N_shm):
 
     directory = os.path.dirname(imgPath)
@@ -198,7 +180,7 @@ class pipeline(cli.Application):
         help= 'target site name',
         mandatory= True)
 
-    diffusionMeasures = ['MD', 'FA']
+    diffusionMeasures = ['MD', 'FA', 'GFA']
 
     def preprocessing(self, imgPath, maskPath):
 
@@ -393,7 +375,7 @@ class pipeline(cli.Application):
             antsReg(fixed, maskPath, moving, outPrefix)
             antsApply(self.templatePath, os.path.join(directory, 'harm'), prefix, self.N_shm)
 
-            print(f'Harmonizing {imgPath} rish features ...')
+            print(f'Reconstructing signal from {imgPath} rish features ...')
             harmImg, harmMask= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, b0, qb_model)
             fh.write(harmImg+','+harmMask+'\n')
 
@@ -402,9 +384,6 @@ class pipeline(cli.Application):
 
             if self.debug:
                 dti_harm(harmImg, harmMask, self.N_shm)
-            # The rest shouldn't be necessary
-            # outPrefix= os.path.join(directory, 'harm', f'harmonized_{prefix}')
-            # rish(harmFile, maskPath, inPrefix, outPrefix, self.N_shm, qb_model)
 
         if preFlag:
             fm.close()
@@ -493,69 +472,6 @@ python -m pdb \
 
 Harmonization tests:
 
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---denoise \
---bvalMap 1000 \
---force \
---process \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
-
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---resample 1.5x1.5x1.5 \
---bvalMap 1000 \
---force \
---process \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---denoise \
---resample 1.5x1.5x1.5 \
---force \
---process \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---resample 1.5x1.5x1.5 \
---force \
---process \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---denoise \
---force \
---process \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---bvalMap 1000 \
---force \
---process \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
 
 python -m pdb \
 /home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
@@ -564,34 +480,24 @@ python -m pdb \
 --bvalMap 1000 \
 --target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified \
 --reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt.modified \
---refName CIDAR \
---targetName BSNIP \
---template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
---process \
---debug
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt.modified \
---target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified \
---harmonized /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified.harmonized \
---refName CIDAR \
---targetName BSNIP \
---template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
---debug
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---resample 1.5x1.5x1.5 \
---bvalMap 1000 \
---target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt \
---reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt \
 --refName CIDAR \
 --targetName BSNIP \
 --template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
 --create \
 --process \
---debug \
---force
+--debug
+
+
+python -m pdb \
+/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
+--N_shm 6 \
+--target /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/target_caselist.txt \
+--reference /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/ref_caselist.txt \
+--refName CIDAR \
+--targetName BSNIP \
+--template /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/template/ \
+--create \
+--process \
+--debug
+
 '''
