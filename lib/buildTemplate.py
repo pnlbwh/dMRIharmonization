@@ -4,38 +4,27 @@ import numpy as np
 from subprocess import check_call
 from plumbum.cmd import antsApplyTransforms
 from plumbum import FG
-import psutil, os
-N_CPU= psutil.cpu_count()
+import os, configparser
 from glob import glob
+
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     from dipy.io.image import load_nifti, save_nifti
     from dipy.segment.mask import applymask
 
+
 from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.ndimage.filters import gaussian_filter
+
 eps= 2.2204e-16
-
-def read_caselist(file):
-
-    with open(file) as f:
-
-        imgs = []
-        masks = []
-        content= f.read()
-        for line, row in enumerate(content.split()):
-            temp= [element for element in row.split(',') if element] # handling w/space
-            imgs.append(temp[0])
-            masks.append(temp[1])
-
-        return (imgs, masks)
-
-
-def modifiedFile(file, subDir, ext):
-    prefix= os.path.basename(file).split('.')[0]
-    return os.path.join(os.path.dirname(file), subDir, prefix+ext)
-
+SCRIPTDIR= os.path.dirname(__file__)
+config = configparser.ConfigParser()
+config.read(os.path.join(SCRIPTDIR,'config.ini'))
+N_shm = int(config['DEFAULT']['N_shm'])
+N_proc = int(config['DEFAULT']['N_proc'])
+diffusionMeasures= [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
+travelHeads= bool(config['DEFAULT']['travelHeads'])
 
 def applyXform(inImg, refImg, warp, trans, outImg):
 
@@ -49,7 +38,7 @@ def applyXform(inImg, refImg, warp, trans, outImg):
 
 
 # def warp_bands(dtiPath, rishPath, maskPath, templatePath, N_shm, diffusionMeasures):
-def warp_bands(imgPath, maskPath, templatePath, N_shm, diffusionMeasures):
+def warp_bands(imgPath, maskPath, templatePath):
 
     prefix= os.path.basename(imgPath).split('.')[0]
     directory= os.path.dirname(imgPath)
@@ -100,14 +89,13 @@ def antsMult(caselist, outPrefix):
                            '-t', "BSplineSyN[0.1,26,0]",
                            '-r', '1',
                            '-c', '2',
-                           '-j', str(N_CPU),
+                           '-j', str(N_proc),
                            '-f', '8x4x2x1',
                            '-o', outPrefix,
                            caselist]), shell= True)
 
 
-# TODO: parallelize
-def dti_stat(siteName, imgs, masks, templatePath, templateAffine, diffusionMeasures):
+def dti_stat(siteName, imgs, masks, templatePath, templateAffine):
 
     maskData = []
     for maskPath in masks:
@@ -133,8 +121,7 @@ def dti_stat(siteName, imgs, masks, templatePath, templateAffine, diffusionMeasu
     return morphed_mask_name
 
 
-# TODO: parellelize
-def rish_stat(siteName, imgs, templatePath, templateAffine, N_shm):
+def rish_stat(siteName, imgs, templatePath, templateAffine):
 
     for i in range(0, N_shm+1, 2):
         imgData= []
@@ -150,7 +137,7 @@ def rish_stat(siteName, imgs, templatePath, templateAffine, N_shm):
                             np.std(imgData, axis= 0), templateAffine)
 
 
-def template_masking(refMaskPath, targetMaskPath, templatePath, siteName, diffusionMeasures):
+def template_masking(refMaskPath, targetMaskPath, templatePath, siteName):
 
     refMask, affine= load_nifti(refMaskPath)
     targetMask, _= load_nifti(targetMaskPath)
@@ -189,7 +176,10 @@ def smooth(data):
 
 def stat_calc(ref, target, mask):
 
-    delta= applymask((ref- target), mask)
+    ref= applymask(ref, mask)
+    target= applymask(target, mask)
+
+    delta= ref- target
     per_diff= 100*delta/(ref+eps)
     per_diff= clip(per_diff, 100., -100.)
     per_diff_smooth= smooth(per_diff)
@@ -199,7 +189,7 @@ def stat_calc(ref, target, mask):
 
 
 def difference_calc(refSite, targetSite, refImgs, targetImgs,
-                    templatePath, templateAffine, subDir, mask, measures, travelHeads):
+                    templatePath, templateAffine, subDir, mask, measures):
 
     '''
     if traveling heads:
@@ -220,7 +210,6 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         per_diff_smooth= []
         scale= []
         if travelHeads:
-            # TODO: parellelize
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
                 directory = os.path.dirname(refImg)
