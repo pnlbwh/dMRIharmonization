@@ -2,27 +2,22 @@
 
 from plumbum import cli
 from distutils.spawn import find_executable
-import os, shutil
-from dti import dti
-from rish import rish
-from buildTemplate import difference_calc, antsMult, warp_bands, \
-    dti_stat, rish_stat, template_masking, createAntsCaselist, \
-    read_caselist
-from denoising import denoising
-from bvalMap import bvalMap
-from resampling import resampling
+import os, shutil, psutil, multiprocessing
+import numpy as np
+
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
+    from dipy.io.image import load_nifti
 
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.io import read_bvals_bvecs
-    from dipy.segment.mask import applymask
-    from nibabel import load
-
-from cleanOutliers import antsReg, antsApply, ring_masking
+from cleanOutliers import reconst
 from debug_fa import sub2tmp2mni, analyzeStat
-import numpy as np
+from buildTemplate import difference_calc, antsMult, warp_bands, \
+    dti_stat, rish_stat, template_masking, createAntsCaselist
+from preprocess import read_caselist, common_processing, preprocessing
+
+N_CPU= psutil.cpu_count()
+SCRIPTDIR= os.path.dirname(__file__)
 
 def check_csv(file, force):
 
@@ -47,9 +42,6 @@ def check_csv(file, force):
                     harmPath= os.path.join(os.path.dirname(img),'harm')
                     check_dir(harmPath, force)
 
-                    # rishPath= os.path.join(os.path.dirname(img), 'harm', 'rish')
-                    # check_dir(rishPath, force)
-
                     dirCheckFlag= 0
 
 
@@ -62,30 +54,6 @@ def check_dir(path, force):
         os.makedirs(path)
     else:
         warnings.warn(f'{path} exists, --force not specified, continuing with existing directory')
-
-
-
-def dti_harm(imgPath, maskPath, N_shm):
-
-    directory = os.path.dirname(imgPath)
-    inPrefix = imgPath.split('.')[0]
-    prefix = os.path.split(inPrefix)[-1]
-
-    outPrefix = os.path.join(directory, 'dti', prefix)
-
-    # if the dti output exists with the same prefix, don't dtifit again
-    if not os.path.exists(outPrefix+'_FA.nii.gz'):
-        dti(imgPath, maskPath, inPrefix, outPrefix)
-
-    outPrefix = os.path.join(directory, 'harm', prefix)
-    b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
-
-    return (b0, shm_coeff, qb_model)
-
-
-def write_bvals(bval_file, bvals):
-    with open(bval_file, 'w') as f:
-        f.write(('\n').join(str(b) for b in bvals))
 
 
 class pipeline(cli.Application):
@@ -115,19 +83,14 @@ class pipeline(cli.Application):
         help='template directory',
         mandatory=True)
 
-    # dtiPath = cli.SwitchAttr(
-    #     ['--dti'],
-    #     help='dti directory',
-    #     mandatory=True)
-    #
-    # harmPath = cli.SwitchAttr(
-    #     ['--harm'],
-    #     help='harmonization directory',
-    #     mandatory=True)
-
     N_shm = cli.SwitchAttr(
-        ['--N_shm'],
+        ['--nShm'],
         help='spherical harmonic order',
+        default= 6)
+
+    N_proc = cli.SwitchAttr(
+        '--nProc',
+        help= 'number of processes/threads to use (-1 for all available, may slow down your system)',
         default= 8)
 
     force = cli.Flag(
@@ -180,82 +143,8 @@ class pipeline(cli.Application):
         help= 'target site name',
         mandatory= True)
 
+
     diffusionMeasures = ['MD', 'FA', 'GFA']
-
-    def preprocessing(self, imgPath, maskPath):
-
-        # load signal attributes for pre-processing ----------------------------------------------------------------
-        lowRes = load(imgPath)
-        lowResImg = lowRes.get_data()
-        lowResImgHdr = lowRes.header
-
-        lowRes = load(maskPath)
-        lowResMask = lowRes.get_data()
-        lowResMaskHdr = lowRes.header
-
-        lowResImg = applymask(lowResImg, lowResMask)
-
-        inPrefix = imgPath.split('.')[0]
-
-        bvals, _ = read_bvals_bvecs(inPrefix + '.bval', None)
-
-        # pre-processing -------------------------------------------------------------------------------------------
-        suffix= None
-        # modifies data only
-        if self.denoise:
-            print('Denoising ', imgPath)
-            lowResImg, _ = denoising(lowResImg, lowResMask)
-            suffix = '_denoised'
-            # save_nifti(imgPath.split('.')[0]+'_denoised.nii.gz', lowResImg, lowResImgHdr.affine)
-
-        # modifies data, and bvals
-        newBval= float(self.bvalMap)
-        if self.bvalMap and (max(bvals)>1.01*newBval or max(bvals)<0.99*newBval):
-            print('B value mapping ', imgPath)
-            lowResImg, bvals = bvalMap(lowResImg, bvals, newBval)
-            suffix = '_bmapped'
-            # save_nifti(imgPath.split('.')[0]+'_bmapped.nii.gz', lowResImg, lowResImgHdr.affine)
-
-        # modifies data, mask, and headers
-        if self.resample:
-            print('Resampling ', imgPath)
-            sp_high = np.array([float(i) for i in self.resample.split('x')])
-            imgPath, maskPath = \
-                resampling(imgPath, maskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals)
-            suffix = '_resampled'
-
-        # save pre-processed data; resampled data is saved inside resampling() -------------------------------------
-        if (self.denoise or self.bvalMap) and not self.resample:
-            imgPath = inPrefix + suffix + '.nii.gz'
-            save_nifti(imgPath, lowResImg, lowResImgHdr.get_qform())
-
-        if suffix:
-            shutil.copyfile(inPrefix + '.bvec', inPrefix + suffix + '.bvec')
-        if self.bvalMap:
-            write_bvals(inPrefix + suffix + '.bval', bvals)
-        elif self.denoise or self.resample:
-            shutil.copyfile(inPrefix + '.bval', inPrefix + suffix + '.bval')
-
-
-        return (imgPath, maskPath)
-
-
-    def common_processing(self, caselist):
-
-        imgs, masks = read_caselist(caselist)
-        f= open(caselist+'.modified', 'w')
-
-        # TODO: parellelize
-        for i in range(len(imgs)):
-
-            imgs[i], masks[i]= self.preprocessing(imgs[i], masks[i])
-            dti_harm(imgs[i], masks[i], self.N_shm)
-            f.write(f'{imgs[i]},{masks[i]}\n')
-
-        f.close()
-
-        return (imgs, masks)
-
 
 
     def createTemplate(self):
@@ -270,13 +159,13 @@ class pipeline(cli.Application):
         # createTemplate steps -----------------------------------------------------------------------------------------
 
         # read image lists
-        refImgs, refMasks= self.common_processing(self.ref_csv)
+        refImgs, refMasks= common_processing(self.ref_csv)
         if not self.ref_csv.endswith('.modified'):
             self.ref_csv += '.modified'
         # debug: use the following line to omit processing again
         # refImgs, refMasks = read_caselist(self.ref_csv)
 
-        targetImgs, targetMasks= self.common_processing(self.target_csv)
+        targetImgs, targetMasks= common_processing(self.target_csv)
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
         # debug: use the following line to omit processing again
@@ -289,39 +178,43 @@ class pipeline(cli.Application):
         antsMultCaselist= os.path.join(self.templatePath, 'antsMultCaselist.txt')
         createAntsCaselist(imgs, antsMultCaselist)
         # run ANTS multivariate template construction
-        antsMult(antsMultCaselist, self.templatePath)
+        # BUG: requires full templatepath for antsMultivariateTemplateConstruction2.sh, requires '/' at the end
+        antsMult(antsMultCaselist, os.path.abspath(self.templatePath))
 
         # load templateAffine
         templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]
 
-        # warp mask, dti, and rish bands
-        # TODO: parellelize
-        for imgPath, maskPath in zip(imgs, masks):
-            warp_bands(imgPath, maskPath, self.templatePath, self.N_shm, self.diffusionMeasures)
 
+        # warp mask, dti, and rish bands
+        pool = multiprocessing.Pool(self.N_proc)
+        for imgPath, maskPath in zip(imgs, masks):
+            pool.apply_async(func= warp_bands, args= (imgPath, maskPath, self.templatePath, ))
+
+        pool.close()
+        pool.join()
 
         print('dti statistics: mean, std(FA, MD) calculation of reference site')
-        refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateAffine, self.diffusionMeasures)
+        refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateAffine)
         print('dti statistics: mean, std(FA, MD) calculation of target site')
-        targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateAffine, self.diffusionMeasures)
+        targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateAffine)
 
         print('masking dti statistics of reference site')
-        _= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.reference, self.diffusionMeasures)
+        _= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.reference)
         print('masking dti statistics of target site')
-        templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target, self.diffusionMeasures)
+        templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target)
 
-        print('rish_statistics mean, std(L{i}) calculation or reference site')
-        rish_stat(self.reference, imgs, self.templatePath, templateAffine, self.N_shm)
-        print('rish_statistics mean, std(L{i}) calculation or target site')
-        rish_stat(self.target, imgs, self.templatePath, templateAffine, self.N_shm)
+        print('rish_statistics mean, std(L{i}) calculation of reference site')
+        rish_stat(self.reference, imgs, self.templatePath, templateAffine)
+        print('rish_statistics mean, std(L{i}) calculation of target site')
+        rish_stat(self.target, imgs, self.templatePath, templateAffine)
 
-        print('difference calculation of diffusionMeasures')
+        print('calculating scale map for diffusionMeasures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
-                        'dti', templateMask, self.diffusionMeasures, self.travelHeads)
+                        'dti', templateMask, self.diffusionMeasures)
 
-        print('difference calculation of rishFeatures')
+        print('calculating scale map for rishFeatures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
-                        'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)], self.travelHeads)
+                        'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)])
 
 
         print('\n\nTemplate creation completed \n\n')
@@ -354,36 +247,23 @@ class pipeline(cli.Application):
             fm = open(self.target_csv, 'w')
 
 
-        # TODO: parellelize
         self.harm_csv= self.target_csv+'.harmonized'
         fh= open(self.harm_csv, 'w')
+        pool = multiprocessing.Pool(self.N_proc)
+        res= []
         for imgPath, maskPath in zip(imgs, masks):
+            res.append(pool.apply_async(func= reconst, args= (imgPath, maskPath, moving, self.templatePath, preFlag, )))
+
+        for r in res:
+            imgPath, maskPath, harmImg, harmMask= r.get()
 
             if preFlag:
-                imgPath, maskPath = self.preprocessing(imgPath, maskPath)
                 fm.write(imgPath + ',' + maskPath + '\n')
+            fh.write(harmImg + ',' + harmMask + '\n')
 
-            b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath, self.N_shm)
 
-            directory= os.path.dirname(imgPath)
-            inPrefix= imgPath.split('.')[0]
-            prefix= os.path.split(inPrefix)[-1]
-
-            print(f'Registering template FA to {imgPath} space ...')
-            outPrefix= os.path.join(directory, 'harm', 'ToSubjectSpace_'+ prefix)
-            fixed= os.path.join(directory, 'dti', f'{prefix}_FA.nii.gz')
-            antsReg(fixed, maskPath, moving, outPrefix)
-            antsApply(self.templatePath, os.path.join(directory, 'harm'), prefix, self.N_shm)
-
-            print(f'Reconstructing signal from {imgPath} rish features ...')
-            harmImg, harmMask= ring_masking(directory, prefix, maskPath, self.N_shm, shm_coeff, b0, qb_model)
-            fh.write(harmImg+','+harmMask+'\n')
-
-            shutil.copyfile(inPrefix + '.bvec', harmImg.split('.')[0] + '.bvec')
-            shutil.copyfile(inPrefix + '.bval', harmImg.split('.')[0] + '.bval')
-
-            if self.debug:
-                dti_harm(harmImg, harmMask, self.N_shm)
+        pool.close()
+        pool.join()
 
         if preFlag:
             fm.close()
@@ -394,15 +274,15 @@ class pipeline(cli.Application):
     def post_debug(self):
 
         print('\n\n Reference site')
-        sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, self.diffusionMeasures)
+        sub2tmp2mni(self.templatePath, self.reference, self.ref_csv)
         ref_mean = analyzeStat(self.ref_csv)
 
         print('\n\n Target site before harmonization')
-        sub2tmp2mni(self.templatePath, self.target, self.target_csv, self.diffusionMeasures)
+        sub2tmp2mni(self.templatePath, self.target, self.target_csv)
         target_mean_before = analyzeStat(self.target_csv)
 
         print('\n\n Target site after harmonization')
-        sub2tmp2mni(self.templatePath, self.target, self.harm_csv, self.diffusionMeasures)
+        sub2tmp2mni(self.templatePath, self.target, self.harm_csv)
         target_mean_after = analyzeStat(self.harm_csv)
 
         print('\n\nPrinting statistics :')
@@ -435,10 +315,26 @@ class pipeline(cli.Application):
         # check_csv(self.target_csv, self.force)
 
 
-
     def main(self):
 
         self.N_shm= int(self.N_shm)
+        self.N_proc= int(self.N_proc)
+        if self.N_proc==-1:
+            self.N_proc= N_CPU
+
+
+        with open(os.path.join(SCRIPTDIR,'config.ini'),'w') as f:
+            f.write('[DEFAULT]\n')
+            f.write(f'N_shm = {self.N_shm}\n')
+            f.write(f'N_proc = {self.N_proc}\n')
+            f.write(f'resample = {self.resample if self.resample else 0}\n')
+            f.write(f'bvalMap = {self.bvalMap if self.bvalMap else 0}\n')
+            f.write(f'denoise = {1 if self.denoise else 0}\n')
+            f.write(f'travelHeads = {1 if self.travelHeads else 0}\n')
+            f.write(f'debug = {1 if self.debug else 0}\n')
+            f.write('diffusionMeasures = {}\n'.format((',').join(self.diffusionMeasures)))
+
+
         self.sanityCheck()
 
         if self.create:
@@ -454,50 +350,3 @@ class pipeline(cli.Application):
 if __name__ == '__main__':
     pipeline.run()
 
-'''
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---denoise \
---resample 1.5x1.5x1.5 \
---bvalMap 1000 \
---force \
---create \
---target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
---reference /home/tb571/Downloads/Harmonization-Python/test_data/ref_caselist.txt \
---template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
---travelHeads
-
-
-Harmonization tests:
-
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---resample 1.5x1.5x1.5 \
---bvalMap 1000 \
---target /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/target_caselist.txt.modified \
---reference /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt.modified \
---refName CIDAR \
---targetName BSNIP \
---template /home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/template/ \
---create \
---process \
---debug
-
-
-python -m pdb \
-/home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
---N_shm 6 \
---target /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/target_caselist.txt \
---reference /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/ref_caselist.txt \
---refName CIDAR \
---targetName BSNIP \
---template /home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/template/ \
---create \
---process \
---debug
-
-'''
