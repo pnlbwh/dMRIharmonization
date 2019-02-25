@@ -1,14 +1,16 @@
-import warnings
+#!/usr/bin/env python
 
+import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
 
     from dipy.io.image import load_nifti, save_nifti
     from dipy.io import read_bvals_bvecs
     from dipy.core.gradients import gradient_table
-    from dipy.reconst.shm import QballModel, normalize_data
+    from dipy.reconst.shm import QballModel
     from dipy.segment.mask import applymask
 
+from normalize import normalize_data, find_b0
 
 import numpy as np
 import os
@@ -28,21 +30,18 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
         qb_model = QballModel(gtab, sh_order=N_shm)
 
         # save baseline image
-        b0 = data[..., np.where(bvals==0)[0]].mean(-1)
+        b0 = find_b0(data, np.where(bvals==0)[0])
         if not os.path.exists(inPrefix+'_bse.nii.gz'):
             save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine= affine)
     else:
         b0= None
 
-    # qb_fit = qb_model.fit(data, mask_data)
-    # shm_coeff= qb_fit.shm_coeff
 
     # inserting correct shm_coeff computation block ---------------------------------
     smooth= 0.006
     data = applymask(data, mask_data)
-    data_norm = normalize_data(data, qb_model._where_b0s)
-    data_norm[data_norm > 1] = 1.
-    data_norm[data_norm < eps] = 0
+    data_norm, _ = normalize_data(data, where_b0=qb_model._where_b0s)
+
 
     L= qb_model.n*(qb_model.n+1)
     L**=2
@@ -65,8 +64,20 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
     return (b0, shm_coeff, qb_model)
 
 if __name__ == '__main__':
-    rish('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/py_thon/dwi',
-         6)
+    # rish('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz',
+    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz',
+    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200',
+    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/py_thon/dwi',
+    #      6)
+
+    # rish('/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_resampled.nii.gz',
+    # '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned_resampled.nii.gz',
+    # '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_resampled',
+    # '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/suheyla_comp/python_comp/GT_3507_dwi_xc_Ed_resampled',
+    # 6)
+
+    rish('/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed.nii.gz',
+    '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned.nii.gz',
+    '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed',
+    '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/suheyla_comp/python_comp/GT_3507_dwi_xc_Ed',
+    6)
