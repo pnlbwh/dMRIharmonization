@@ -1,22 +1,28 @@
 from subprocess import check_call
-from buildTemplate import applyXform
-import os
+import os, configparser, shutil
 from skimage.measure import label, regionprops
-from rish import rish
-from local_med_filter import local_med_filter
+from scipy.ndimage import binary_erosion, binary_dilation, \
+    generate_binary_structure, iterate_structure
+import numpy as np
 
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
-
     from dipy.io.image import load_nifti, save_nifti
     from dipy.segment.mask import applymask
 
-import numpy as np
+from buildTemplate import applyXform
+from rish import rish
+from local_med_filter import local_med_filter
+from preprocess import dti_harm, preprocessing
 
-from scipy.ndimage import binary_erosion, binary_dilation, \
-    generate_binary_structure, median_filter, iterate_structure
 eps= 2.2204e-16
+SCRIPTDIR= os.path.dirname(__file__)
+config = configparser.ConfigParser()
+config.read(os.path.join(SCRIPTDIR,'config.ini'))
+N_shm = int(config['DEFAULT']['N_shm'])
+N_proc = int(config['DEFAULT']['N_proc'])
+debug = int(config['DEFAULT']['debug'])
 
 def antsReg(img, mask, mov, outPrefix):
 
@@ -26,15 +32,17 @@ def antsReg(img, mask, mov, outPrefix):
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
-                               '-o', outPrefix]), shell= True)
+                               '-o', outPrefix,
+                               '-n', str(N_proc)]), shell= True)
     else:
         check_call((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
-                               '-o', outPrefix]), shell= True)
+                               '-o', outPrefix,
+                               '-n', str(N_proc)]), shell= True)
 
-def antsApply(templatePath, directory, prefix, N_shm):
+def antsApply(templatePath, directory, prefix):
 
     for i in range(0, N_shm+1, 2):
         moving= os.path.join(templatePath, f'Scale_L{i}.nii.gz')
@@ -73,7 +81,7 @@ def findLargestConnectMask(img, mask):
     return mask
 
 
-def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
+def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model):
 
     B = qb_model.B
     bvals= qb_model.gtab.bvals
@@ -108,17 +116,11 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
         tmp= local_med_filter(paddedImg, outLier)
         denoisedImg = tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
 
-        # restImg= paddedImg*(1-skullRingMask)
-        # denoisedSkullRing= median_filter(skullRing, (5,5,5))
-        # # multiply denoisedSkullRing by skullRing again to avoid out of ROI inclusion
-        # tmp= restImg+denoisedSkullRing*skullRing
-        # denoisedImg= tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
-
 
         # for i=0, create new mask over denoisedImg, save it as harmonzied_{prefix}_mask
         if i==0:
             mask_final= findLargestConnectMask(denoisedImg, mask)
-            mask_final= binary_dilation(mask_final, generate_binary_structure(3,1))*1
+            # mask_final= binary_dilation(mask_final, generate_binary_structure(3,1))*1
             harmMask = os.path.join(directory, f'harmonized_{prefix}_mask.nii.gz')
             save_nifti(harmMask, mask_final, affine=affine)
 
@@ -128,11 +130,9 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
             mapped_cs.append(denoisedImg * shm_coeff[ :,:,:,level])
 
 
-    # FIXME: incorrect product
-    # S_hat= np.moveaxis(mapped_cs, 0, -1) @ B.T
     S_hat= np.dot(np.moveaxis(mapped_cs, 0, -1), B.T)
-    S_hat[S_hat<eps]= 0
-    S_hat[S_hat>1]= 1
+    np.nan_to_num(S_hat).clip(min= 0., max= 1., out= S_hat)
+
 
     # affine= templateAffine for all Scale_L{i}
     mappedFile= os.path.join(directory, f'{prefix}_mapped_cs.nii.gz')
@@ -144,7 +144,6 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
     # place b0s in proper indices
     S_hat_final= stack_b0(bvals, S_hat_dwi, b0)
     S_hat_final= applymask(S_hat_final, mask_final)
-    # S_hat_final= np.concatenate((np.expand_dims(b0, axis=3), S_hat_dwi), axis= 3)
 
 
     # save harmonized data
@@ -154,6 +153,36 @@ def ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model):
 
     return (harmImg, harmMask)
 
+# def reconst(imgPath, maskPath, moving, templatePath, fm, fh, preFlag):
+def reconst(imgPath, maskPath, moving, templatePath, preFlag):
+
+    if preFlag:
+        imgPath, maskPath = preprocessing(imgPath, maskPath)
+        # fm.write(imgPath + ',' + maskPath + '\n')
+
+    b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath)
+
+    directory = os.path.dirname(imgPath)
+    inPrefix = imgPath.split('.')[0]
+    prefix = os.path.split(inPrefix)[-1]
+
+    print(f'Registering template FA to {imgPath} space ...')
+    outPrefix = os.path.join(directory, 'harm', 'ToSubjectSpace_' + prefix)
+    fixed = os.path.join(directory, 'dti', f'{prefix}_FA.nii.gz')
+    antsReg(fixed, maskPath, moving, outPrefix)
+    antsApply(templatePath, os.path.join(directory, 'harm'), prefix)
+
+    print(f'Reconstructing signal from {imgPath} rish features ...')
+    harmImg, harmMask = ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model)
+    # fh.write(harmImg + ',' + harmMask + '\n')
+
+    shutil.copyfile(inPrefix + '.bvec', harmImg.split('.')[0] + '.bvec')
+    shutil.copyfile(inPrefix + '.bval', harmImg.split('.')[0] + '.bval')
+
+    if debug:
+        dti_harm(harmImg, harmMask)
+
+    return (imgPath, maskPath, harmImg, harmMask)
 
 def stack_b0(bvals, dwi, b0):
 
@@ -171,8 +200,11 @@ def stack_b0(bvals, dwi, b0):
     return np.moveaxis(np.array(S_hat_final), 0, -1)
 
 if __name__ =='__main__':
-    imgPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/dwi_A_prisma_st_b1200.nii.gz'
-    maskPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/mask.nii.gz'
+    # imgPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/dwi_A_prisma_st_b1200.nii.gz'
+    # maskPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/mask.nii.gz'
+
+    imgPath= '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_resampled.nii.gz'
+    maskPath= '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned_resampled.nii.gz'
 
     directory= os.path.dirname(imgPath)
     inPrefix= imgPath.split('.')[0]
@@ -181,4 +213,4 @@ if __name__ =='__main__':
     N_shm= 6
 
     b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
-    ring_masking(directory, prefix, maskPath, N_shm, shm_coeff, b0, qb_model)
+    ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model)
