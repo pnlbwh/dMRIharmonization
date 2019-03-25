@@ -1,5 +1,6 @@
 import os, shutil, configparser, multiprocessing
 import numpy as np
+from conversion import nifti_write
 
 
 import warnings
@@ -58,8 +59,8 @@ def dti_harm(imgPath, maskPath):
     outPrefix = os.path.join(directory, 'dti', prefix)
 
     # if the dti output exists with the same prefix, don't dtifit again
-    # if not os.path.exists(outPrefix+'_FA.nii.gz'):
-    dti(imgPath, maskPath, inPrefix, outPrefix)
+    if not os.path.exists(outPrefix+'_FA.nii.gz'):
+        dti(imgPath, maskPath, inPrefix, outPrefix)
 
     outPrefix = os.path.join(directory, 'harm', prefix)
     b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
@@ -73,14 +74,25 @@ def pre_dti_harm(itr):
     dti_harm(imgPath, maskPath)
     return (imgPath, maskPath)
 
+# convert NRRD to NIFTI on the fly
+def nrrd2nifti(imgPath):
+
+    if imgPath.endswith('.nrrd') or imgPath.endswith('.nhdr'):
+        niftiImgPrefix= imgPath.split('.')[0]
+        nifti_write(imgPath, niftiImgPrefix)
+
+        return niftiImgPrefix+'.nii.gz'
+
 
 def preprocessing(imgPath, maskPath):
 
     # load signal attributes for pre-processing ----------------------------------------------------------------
+    imgPath= nrrd2nifti(imgPath)
     lowRes = load(imgPath)
     lowResImg = lowRes.get_data()
     lowResImgHdr = lowRes.header
 
+    maskPath= nrrd2nifti(maskPath)
     lowRes = load(maskPath)
     lowResMask = lowRes.get_data()
     lowResMaskHdr = lowRes.header
