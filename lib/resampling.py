@@ -21,7 +21,6 @@ def save_high_res(fileName, sp_high, lowResImgHdr, highResImg):
 
     imgHdrOut = lowResImgHdr.copy()
     sp_low= imgHdrOut['pixdim'][1:4]
-    # setting just pixdim should automatically update all the affines
     imgHdrOut['pixdim'][1:4] = sp_high
     imgHdrOut['dim'][1:4] = highResImg.shape[:3]
     scale= np.diag((sp_high/sp_low).tolist()+[1.])
@@ -65,6 +64,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     check_call(['unring.a64', highResB0Path, highResB0Path])
     b0_gibs = nib.load(highResB0Path).get_data()
 
+    # defining lh_max and lh_min separately to deal with memory error
     lh_max= b0.max()
     lh_min= b0.min()
     b0_gibs[b0_gibs > lh_max] = lh_max
@@ -77,7 +77,6 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     for i in where_b0:
         highResImg[:,:,:,i]= b0_gibs
 
-    # defining lh_max and lh_min separately to deal with memory error
     lh_max= lowResImg.max()
     lh_min= lowResImg.min()
     highResImg[highResImg > lh_max] = lh_max
