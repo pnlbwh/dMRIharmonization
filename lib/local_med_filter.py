@@ -1,6 +1,6 @@
 import numpy as np
 
-def local_med_filter(img, outLier, w=2):
+def local_med_filter(img, outLier, w=3):
     # img is the zero padded image
     # outLier is the mask over img>np.percentile(img,95)
 
