@@ -184,6 +184,7 @@ def stat_calc(ref, target, mask):
     per_diff= clip(per_diff, 100., -100.)
     per_diff_smooth= smooth(per_diff)
     scale= ref/(target+eps)
+    scale.clip(max=10., out= scale)
 
     return (delta, per_diff, per_diff_smooth, scale)
 
