@@ -10,12 +10,6 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     from dipy.io.image import load_nifti
 
-from cleanOutliers import reconst
-from debug_fa import sub2tmp2mni, analyzeStat
-from buildTemplate import difference_calc, antsMult, warp_bands, \
-    dti_stat, rish_stat, template_masking, createAntsCaselist
-from preprocess import read_caselist, common_processing, preprocessing
-
 N_CPU= psutil.cpu_count()
 SCRIPTDIR= os.path.dirname(__file__)
 
@@ -61,19 +55,19 @@ class pipeline(cli.Application):
     """Template creation and harmonization"""
 
     ref_csv = cli.SwitchAttr(
-        ['--reference'],
+        ['--ref_list'],
         cli.ExistingFile,
         help='reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
         mandatory=False)
 
     target_csv = cli.SwitchAttr(
-        ['--target'],
+        ['--tar_list'],
         cli.ExistingFile,
         help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
         mandatory=True)
 
     harm_csv = cli.SwitchAttr(
-        ['--harmonized'],
+        ['--harm_list'],
         cli.ExistingFile,
         help='harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
         mandatory=False)
@@ -84,12 +78,12 @@ class pipeline(cli.Application):
         mandatory=True)
 
     N_shm = cli.SwitchAttr(
-        ['--nShm'],
+        ['--nshm'],
         help='spherical harmonic order',
         default= 6)
 
     N_proc = cli.SwitchAttr(
-        '--nProc',
+        '--nproc',
         help= 'number of processes/threads to use (-1 for all available, may slow down your system)',
         default= 8)
 
@@ -149,6 +143,10 @@ class pipeline(cli.Application):
 
     def createTemplate(self):
 
+        from buildTemplate import difference_calc, antsMult, warp_bands, \
+            dti_stat, rish_stat, template_masking, createAntsCaselist
+        from preprocess import read_caselist, common_processing
+
         # check directory existence
         check_dir(self.templatePath, self.force)
 
@@ -177,9 +175,14 @@ class pipeline(cli.Application):
         # create caselist for antsMult
         antsMultCaselist= os.path.join(self.templatePath, 'antsMultCaselist.txt')
         createAntsCaselist(imgs, antsMultCaselist)
+
         # run ANTS multivariate template construction
-        # BUG: requires full templatepath for antsMultivariateTemplateConstruction2.sh, requires '/' at the end
-        antsMult(antsMultCaselist, os.path.abspath(self.templatePath))
+
+        # ATTN: antsMultivariateTemplateConstruction2.sh requires '/' at the end of templatePath
+        if not self.templatePath.endswith('/'):
+            self.templatePath= self.templatePath+ '/'
+        # ATTN: antsMultivariateTemplateConstruction2.sh requires absolute path for caselist
+        antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
 
         # load templateAffine
         templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]
@@ -222,6 +225,9 @@ class pipeline(cli.Application):
 
     def harmonizeData(self):
 
+        from cleanOutliers import reconst
+        from preprocess import read_caselist, dti_harm
+
         # check the templatePath
         if not os.path.exists(self.templatePath):
             raise NotADirectoryError(f'{self.templatePath} does not exist')
@@ -231,6 +237,16 @@ class pipeline(cli.Application):
 
         # go through each file listed in csv, check their existence, create dti and harm directories
         check_csv(self.target_csv, self.force)
+
+        # if self.debug:
+        #     # calcuate diffusion measures of target site before any processing so we are able to compare
+        #     # with the ones after harmonization
+        #     pool = multiprocessing.Pool(self.N_proc)
+        #     res= pool.map_async(dti_harm, zip(imgs, masks))
+        #
+        #     res.get()
+        #     pool.close()
+        #     pool.join()
 
         # cleanOutliers steps ------------------------------------------------------------------------------------------
 
@@ -272,6 +288,8 @@ class pipeline(cli.Application):
 
 
     def post_debug(self):
+
+        from debug_fa import sub2tmp2mni, analyzeStat
 
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv)
@@ -321,7 +339,6 @@ class pipeline(cli.Application):
         self.N_proc= int(self.N_proc)
         if self.N_proc==-1:
             self.N_proc= N_CPU
-
 
         with open(os.path.join(SCRIPTDIR,'config.ini'),'w') as f:
             f.write('[DEFAULT]\n')
