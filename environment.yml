@@ -1,0 +1,23 @@
+name: dMRIharmonization
+
+channels:
+    - conda-forge
+    - aramislab
+
+dependencies:
+    - python>=3.0
+    - ipython
+    - numpy
+    - nibabel
+    - dipy
+    - scipy
+    - scikit-image
+    - psutil
+    - plumbum
+    - ants=2.2.0
+    - conda-build
+    - git
+    - pip
+    - pip:
+        - git+https://github.com/mhe/pynrrd.git
+        - git+https://github.com/pnlbwh/conversion.git
