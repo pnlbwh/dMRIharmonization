@@ -52,7 +52,7 @@ def check_dir(path, force):
 
 class pipeline(cli.Application):
 
-    """Template creation and harmonization"""
+    """Template creation, harmonization, and debugging"""
 
     ref_csv = cli.SwitchAttr(
         ['--ref_list'],
@@ -85,7 +85,7 @@ class pipeline(cli.Application):
     N_proc = cli.SwitchAttr(
         '--nproc',
         help= 'number of processes/threads to use (-1 for all available, may slow down your system)',
-        default= 8)
+        default= 4)
 
     force = cli.Flag(
         ['--force'],
@@ -128,12 +128,12 @@ class pipeline(cli.Application):
         default= False)
 
     reference = cli.SwitchAttr(
-        '--refName',
+        '--ref_name',
         help= 'reference site name',
         mandatory= True)
 
     target = cli.SwitchAttr(
-        '--targetName',
+        '--tar_name',
         help= 'target site name',
         mandatory= True)
 
@@ -238,15 +238,16 @@ class pipeline(cli.Application):
         # go through each file listed in csv, check their existence, create dti and harm directories
         check_csv(self.target_csv, self.force)
 
-        # if self.debug:
-        #     # calcuate diffusion measures of target site before any processing so we are able to compare
-        #     # with the ones after harmonization
-        #     pool = multiprocessing.Pool(self.N_proc)
-        #     res= pool.map_async(dti_harm, zip(imgs, masks))
-        #
-        #     res.get()
-        #     pool.close()
-        #     pool.join()
+        if self.debug:
+            # calcuate diffusion measures of target site before any processing so we are able to compare
+            # with the ones after harmonization
+            imgs, masks= read_caselist(self.tar_unproc_csv)
+            pool = multiprocessing.Pool(self.N_proc)
+            for imgPath, maskPath in zip(imgs, masks):
+                pool.apply_async(func= dti_harm, args= ((imgPath, maskPath, )))
+
+            pool.close()
+            pool.join()
 
         # cleanOutliers steps ------------------------------------------------------------------------------------------
 
@@ -292,15 +293,15 @@ class pipeline(cli.Application):
         from debug_fa import sub2tmp2mni, analyzeStat
 
         print('\n\n Reference site')
-        sub2tmp2mni(self.templatePath, self.reference, self.ref_csv)
+        sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
         ref_mean = analyzeStat(self.ref_csv)
 
         print('\n\n Target site before harmonization')
-        sub2tmp2mni(self.templatePath, self.target, self.target_csv)
+        sub2tmp2mni(self.templatePath, self.target, self.tar_unproc_csv, tar_unproc= True)
         target_mean_before = analyzeStat(self.target_csv)
 
         print('\n\n Target site after harmonization')
-        sub2tmp2mni(self.templatePath, self.target, self.harm_csv)
+        sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
         target_mean_after = analyzeStat(self.harm_csv)
 
         print('\n\nPrinting statistics :')
@@ -319,7 +320,9 @@ class pipeline(cli.Application):
         external_commands= [
             'antsMultivariateTemplateConstruction2.sh',
             'antsApplyTransforms',
-            'antsRegistrationSyNQuick.sh']
+            'antsRegistrationSyNQuick.sh',
+            'dtifit',
+            'unring.a64']
 
         for cmd in external_commands:
             exe= find_executable(cmd)
@@ -339,6 +342,11 @@ class pipeline(cli.Application):
         self.N_proc= int(self.N_proc)
         if self.N_proc==-1:
             self.N_proc= N_CPU
+
+        if self.target_csv.endswith('.modified'):
+            self.tar_unproc_csv= str(self.target_csv).split('.modified')[0]
+        else:
+            self.tar_unproc_csv= str(self.target_csv)
 
         with open(os.path.join(SCRIPTDIR,'config.ini'),'w') as f:
             f.write('[DEFAULT]\n')
