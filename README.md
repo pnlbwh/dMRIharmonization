@@ -4,6 +4,47 @@
 
 *dMRIharmonization* repository is developed by Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi, Brigham and Women's Hospital (Harvard Medical School).
 
+
+Table of Contents
+=================
+
+   * [Multi-site dMRI harmonization](#multi-site-dmri-harmonization)
+   * [Citation](#citation)
+   * [Dependencies](#dependencies)
+   * [Installation](#installation)
+      * [1. Install prerequisites](#1-install-prerequisites)
+         * [Check system architecture](#check-system-architecture)
+         * [Python 3](#python-3)
+         * [FSL](#fsl)
+         * [unringing](#unringing)
+      * [2. Install pipeline](#2-install-pipeline)
+         * [3. Configure your environment](#3-configure-your-environment)
+   * [Running](#running)
+   * [Tests](#tests)
+   * [List of images](#list-of-images)
+   * [Site names](#site-names)
+   * [Multi threading](#multi-threading)
+   * [Order of spherical harmonics](#order-of-spherical-harmonics)
+   * [NRRD support](#nrrd-support)
+   * [Preprocessing](#preprocessing)
+         * [1. Denoising](#1-denoising)
+         * [2. Bvalue mapping](#2-bvalue-mapping)
+         * [3. Resampling](#3-resampling)
+   * [Config](#config)
+   * [Template](#template)
+   * [List of outputs](#list-of-outputs)
+      * [1. Folders](#1-folders)
+      * [2. Files](#2-files)
+   * [Template creation](#template-creation)
+   * [Data harmonization](#data-harmonization)
+   * [Debugging](#debugging)
+         * [1. With the pipeline](#1-with-the-pipeline)
+         * [2. Use seperately](#2-use-seperately)
+   * [Caveats](#caveats)
+   * [Reference](#reference)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
 # Multi-site dMRI harmonization
 
 Integrated study of multi-site diffusion MRI (dMRI) data can enable diagnosis, monitoring, and treatment of 
@@ -280,12 +321,12 @@ and used for further processing.
 # List of outputs
     pass
     
-## Folders
+## 1. Folders
 
 In each input image directory, two folders are created: `dti` and `rish`. The `dti` folder stores diffusion measures 
 and corresponding transform files. On the other hand `rish` folder stores RISH features and corresponding transform files.
 
-## Files
+## 2. Files
     
     pass
 
