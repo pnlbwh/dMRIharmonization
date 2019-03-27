@@ -6,26 +6,36 @@ from plumbum import FG
 def main():
 
     parser = argparse.ArgumentParser(description='Write pruned nifti data')
-    parser.add_argument('--nifti', type=str, required=True,
-                        help='nifti file')
+    parser.add_argument('--nifti', type=str, required=True, help='nifti file')
 
-    parser.add_argument('--bval', type=str, required=True,
-                    help='bval file')
+    parser.add_argument('--bval', type=str, help='bval file')
+    parser.add_argument('--bvec', type=str, help='bvec file')
+    parser.add_argument('--mask', type=str, help='mask file')
 
-    parser.add_argument('--bvec', type=str, required=True,
-                    help='bvec file')
-
-    parser.add_argument('--prefix', type=str, required=True,
-                    help='output prefix')
+    parser.add_argument('--prefix', type=str, help='output prefix')
 
 
-    ind = [1,3,7,11,15,17,19,21,23,27,33]
+    ind = [1,3,5,7,9,11,13,15,17,19,21,23,27,29,31,33]
 
     args = parser.parse_args()
-    nifitFile= args.nifti
+    niftiFile= args.nifti
+    inPrefix= niftiFile.split('.')[0]
+
     bvalFile= args.bval
+    if not bvalFile:
+        bvalFile= inPrefix+'.bval'
+
     bvecFile= args.bvec
-    prefix= args.prefix
+    if not bvecFile:
+        bvecFile= inPrefix+'.bvec'
+
+    maskFile= args.mask
+    if not maskFile:
+        maskFile= inPrefix+'_mask.nii.gz'
+
+    outPrefix= args.prefix
+    if not outPrefix:
+        outPrefix= inPrefix
 
     bvals= read_bvals(bvalFile)
     bvecs= read_bvecs(bvecFile)
@@ -33,18 +43,19 @@ def main():
     bvals= [bvals[i] for i in ind]
     bvecs= [bvecs[i] for i in ind]
 
-    write_bvals(prefix+'.bval', bvals)
-    write_bvecs(prefix+'.bvec', bvecs)
+    write_bvals(outPrefix+'.bval', bvals)
+    write_bvecs(outPrefix+'.bvec', bvecs)
 
-    xmin = str(10)
-    xsize = str(70)
-    ymin = str(10)
-    ysize = str(70)
-    zmin = str(10)
-    zsize = str(40)
+    xmin = str(20)
+    xsize = str(60)
+    ymin = str(20)
+    ysize = str(60)
+    zmin = str(15)
+    zsize = str(35)
     tmin = (',').join(str(i) for i in ind)
     tsize = str(len(ind))
-    fslroi[nifitFile, prefix+'.nii.gz', xmin, xsize, ymin, ysize, zmin, zsize, tmin, tsize] & FG
+    fslroi[niftiFile, outPrefix +'.nii.gz', xmin, xsize, ymin, ysize, zmin, zsize, tmin, tsize] & FG
+    fslroi[maskFile, outPrefix + '_mask.nii.gz', xmin, xsize, ymin, ysize, zmin, zsize] & FG
 
 def read_bvecs(bvec_file):
 
@@ -88,6 +99,14 @@ if __name__=='__main__':
     main()
 
 '''
+../lib/harmonization.py --bvalMap 1000 --resample 1.5x1.5x1.5 \
+--template ./template/ \
+--ref_list connectom.txt --tar_list prisma.txt \
+--ref_name CONNECTOM --tar_name PRISMA \
+--nshm 4 --nproc -1 \
+--create --process --debug
+
+
 A
 
 /home/tb571/Downloads/Harmonization-Python/lib/test_data_creation.py \

@@ -3,7 +3,7 @@
 # set -x
 
 sites=(connectom prisma)
-cases=(a b c)
+cases=(A B C)
 
 for s in ${sites[@]}
 do
