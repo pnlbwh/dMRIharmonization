@@ -126,6 +126,7 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model):
 
 
         ind= int(i/2)
+        denoisedImg= applymask(denoisedImg, mask_final)
         for level in range(shs_same_level[ind][0], shs_same_level[ind][1]):
             mapped_cs.append(denoisedImg * shm_coeff[ :,:,:,level])
 
