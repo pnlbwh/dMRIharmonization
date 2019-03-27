@@ -11,12 +11,11 @@ with warnings.catch_warnings():
     from dipy.io import read_bvals_bvecs
     from nibabel import load
 
-from .denoising import denoising
-from .bvalMap import remapBval
-from .resampling import resampling
-
-from .dti import dti
-from .rish import rish
+from denoising import denoising
+from bvalMap import remapBval
+from resampling import resampling
+from dti import dti
+from rish import rish
 
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
@@ -82,6 +81,8 @@ def nrrd2nifti(imgPath):
         nifti_write(imgPath, niftiImgPrefix)
 
         return niftiImgPrefix+'.nii.gz'
+    else:
+        return imgPath
 
 
 def preprocessing(imgPath, maskPath):
