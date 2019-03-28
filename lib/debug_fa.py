@@ -45,6 +45,7 @@ def register_reference(imgPath, mniTmp, warp2mni, trans2mni):
 
 
 def register_target(imgPath, mniTmp):
+
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
     inPrefix = imgPath.split('.')[0]
@@ -53,9 +54,11 @@ def register_target(imgPath, mniTmp):
     dmImg = os.path.join(directory, 'dti', prefix + f'_FA.nii.gz')
 
     outPrefix = os.path.join(directory, 'dti', prefix + '_FA_ToMNI_')
-    antsReg(mniTmp, None, dmImg, outPrefix)
     warp2mni = outPrefix + '1Warp.nii.gz'
     trans2mni = outPrefix + '0GenericAffine.mat'
+    # unprocessed target data is given, so in case multiple debug is needed, pass the registration
+    if not os.path.exists(warp2mni):
+        antsReg(mniTmp, None, dmImg, outPrefix)
 
     for dm in diffusionMeasures:
         output = os.path.join(directory, 'dti', prefix + f'_InMNI_{dm}.nii.gz')
@@ -82,9 +85,11 @@ def register_harmonized(imgPath, mniTmp, warp2mni, trans2mni, templatePath, site
     dmTmp = os.path.join(templatePath, f'Mean_{siteName}_FA.nii.gz')
     maskTmp = os.path.join(templatePath, f'{siteName}_Mask.nii.gz')
     outPrefix = os.path.join(directory, 'dti', prefix + '_FA')
-    antsReg(dmTmp, maskTmp, dmImg, outPrefix)
     warp2tmp = outPrefix + '1Warp.nii.gz'
     trans2tmp = outPrefix + '0GenericAffine.mat'
+    # signal reconstruction might change with zero padding size, median filtering kernel size, and harmonized mask
+    # so in case multiple debug is needed, redo the registration
+    antsReg(dmTmp, maskTmp, dmImg, outPrefix)
 
     for dm in diffusionMeasures:
         output = os.path.join(directory, 'dti', prefix + f'_InMNI_{dm}.nii.gz')
@@ -108,6 +113,8 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
     outPrefix= os.path.join(templatePath, f'TemplateToMNI_{siteName}')
     warp2mni= outPrefix+'1Warp.nii.gz'
     trans2mni= outPrefix+'0GenericAffine.mat'
+    # template is created once, it is expected that the user wants to keep the template same during debugging
+    # so in case multiple debug is needed, pass the registration
     if not os.path.exists(warp2mni):
         antsReg(mniTmp, None, moving, outPrefix)
 
@@ -117,10 +124,10 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
     for imgPath in imgs:
 
         if ref:
-            pool.apply_async(func= register_reference, args= (imgPath, warp2mni, trans2mni, ))
+            pool.apply_async(func= register_reference, args= (imgPath, mniTmp, warp2mni, trans2mni, ))
         elif tar_unproc:
             pool.apply_async(func= register_target, args= (imgPath, mniTmp, ))
-        if tar_harm:
+        elif tar_harm:
             pool.apply_async(func= register_harmonized, args= (imgPath, warp2mni, trans2mni, mniTmp, templatePath, siteName, ))
 
     pool.close()
