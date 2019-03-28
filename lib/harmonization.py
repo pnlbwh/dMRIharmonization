@@ -298,7 +298,7 @@ class pipeline(cli.Application):
 
         print('\n\n Target site before harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.tar_unproc_csv, tar_unproc= True)
-        target_mean_before = analyzeStat(self.target_csv)
+        target_mean_before = analyzeStat(self.tar_unproc_csv)
 
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
