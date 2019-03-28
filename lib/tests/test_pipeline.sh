@@ -16,16 +16,16 @@ __version__=`echo $v | xargs`
 
 # download test data
 test_data=connectom_prisma
-#wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
-#tar -xzvf ${test_data}.zip
+wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
+tar -xzvf ${test_data}.zip
 
 cd ${test_data}
 CURRDIR=`pwd`
 
 
 # append path to image list and write back
-#write_list connectom.txt
-#write_list prisma.txt
+write_list connectom.txt
+write_list prisma.txt
 
 
 # run test

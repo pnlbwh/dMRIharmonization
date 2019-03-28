@@ -139,16 +139,4 @@ def denoising(dwi, mask=None):
 
 if __name__=='__main__':
 
-    dwi=load_nifti('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz')[0]
-    mask= load_nifti('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz')[0]
-    Signal, Sigma= denoising(dwi, mask)
-
-
-    bvals, _= read_bvals_bvecs(
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.bval',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.bvec')
-    savemat('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/denoise/img_data.mat',
-            {'pySignal':Signal, 'pySigma':Sigma, 'dwi': dwi, 'mask':mask})
-
-    # savemat('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/denoise/xyz_data.mat',{'x':x, 'y':y, 'z':z})
-    # np.take(Signal, np.where(bvals != 0.)[0], axis=3)
+    pass

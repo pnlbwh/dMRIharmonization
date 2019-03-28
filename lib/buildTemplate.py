@@ -248,15 +248,5 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
 
 
 
-def main():
-    import sys
-    antsMult(sys.argv[1], sys.argv[2])
-
 if __name__ == '__main__':
-    main()
-
-'''  
-/home/tb571/Downloads/Harmonization-Python/lib/antsMult.py \
-/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/template/CaseList_MultivariateTemplate.txt \
-/home/tb571/Downloads/Harmonization-Python/lib/abc
-'''
+    pass

@@ -63,21 +63,5 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
     return (b0, shm_coeff, qb_model)
 
-if __name__ == '__main__':
-    # rish('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz',
-    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz',
-    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200',
-    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/py_thon/dwi',
-    #      6)
-
-    # rish('/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_resampled.nii.gz',
-    # '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned_resampled.nii.gz',
-    # '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_resampled',
-    # '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/suheyla_comp/python_comp/GT_3507_dwi_xc_Ed_resampled',
-    # 6)
-
-    rish('/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed.nii.gz',
-    '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned.nii.gz',
-    '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed',
-    '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/suheyla_comp/python_comp/GT_3507_dwi_xc_Ed',
-    6)
+if __name__=='__main__':
+    pass

@@ -26,10 +26,5 @@ def dti(imgPath, maskPath, inPrefix, outPrefix):
     save_nifti(outPrefix+'_GFA.nii.gz', gfa_vol, affine)
 
 
-def main():
-    dti('/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz',
-        '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/fa_test/abc')
-
 if __name__ == '__main__':
-    main()
+    pass

@@ -5,7 +5,6 @@ with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
 
     from dipy.io.image import load_nifti, save_nifti
-    # from dipy.reconst.shm import normalize_data
     from dipy.segment.mask import applymask
     import nibabel as nib
 
@@ -45,18 +44,18 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     highResImg= np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
     for i in np.where(bvals != 0)[0]:
         print('Resampling gradient ', i)
-        highResImg[:,:,:,i]= resize(np.double(lowResImg[:,:,:,i]), (sx, sy, sz), order= sOrder, mode= 'constant')
+        highResImg[:,:,:,i]= resize(np.double(lowResImg[:,:,:,i]), (sx, sy, sz), order= sOrder, mode= 'edge')
 
     # resample the mask ---------------------------------------------------------------
     highResMaskPath = lowResMaskPath.split('.')[0] + '_resampled' + '.nii.gz'
-    highResMask= resize(np.double(lowResMask), (sx, sy, sz), order= 1, mode= 'constant') # order 1 for linear interpolation
+    highResMask= resize(np.double(lowResMask), (sx, sy, sz), order= 1, mode= 'edge') # order 1 for linear interpolation
     highResMask= binary_opening(highResMask >= 0.5, structure=generate_binary_structure(3, 1)) * 1
     save_high_res(highResMaskPath, sp_high, lowResMaskHdr, highResMask.astype(int))
 
 
     # resample the b0 ----------------------------------------------------------------
     highResB0Path= lowResImgPath.split('.')[0] + '_resampled_bse' + '.nii.gz'
-    b0HighRes= resize(np.double(b0), (sx, sy, sz), order= sOrder, mode= 'constant')
+    b0HighRes= resize(np.double(b0), (sx, sy, sz), order= sOrder, mode= 'edge')
     np.nan_to_num(b0HighRes).clip(min= 1., out= b0HighRes)
     save_high_res(highResB0Path, sp_high, lowResMaskHdr, b0HighRes)
 
@@ -92,33 +91,8 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
 
 if __name__=='__main__':
-    from dipy.io import read_bvals_bvecs
+    pass
 
-    # lowResImgPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.nii.gz'
-    # lowResMaskPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/mask.nii.gz'
-    # bvals, _= read_bvals_bvecs(
-    #     '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/connectom/dwi_A_connectom_st_b1200.bval',
-    #     None)
 
-    # lowResImgPath= '/home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_dwi.nii.gz'
-    # lowResMaskPath= '/home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_mask.nii.gz'
-    # bvals, _= read_bvals_bvecs(
-    #     '/home/tb571/Downloads/Harmonization-Python/test_data/test_a/connectom/connectom_a_dwi.bval', None)
-
-    lowResImgPath= '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed.nii.gz'
-    lowResMaskPath= '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned.nii.gz'
-    bvals, _= read_bvals_bvecs(
-        '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed.bval', None)
-
-    lowRes = nib.load(lowResImgPath)
-    lowResImg= lowRes.get_data()
-    lowResImgHdr= lowRes.header
-
-    lowRes = nib.load(lowResMaskPath)
-    lowResMask= lowRes.get_data()
-    lowResMaskHdr= lowRes.header
-
-    resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr,
-               np.array([1.5,1.5,1.5]), bvals)
 
 

@@ -201,17 +201,4 @@ def stack_b0(bvals, dwi, b0):
     return np.moveaxis(np.array(S_hat_final), 0, -1)
 
 if __name__ =='__main__':
-    # imgPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/dwi_A_prisma_st_b1200.nii.gz'
-    # maskPath= '/home/tb571/Downloads/Harmonization-Python/connectom_prisma_demoData/A/prisma/mask.nii.gz'
-
-    imgPath= '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_resampled.nii.gz'
-    maskPath= '/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/GT_3507/GT_3507_dwi_xc_Ed_OTSUtensormask_cleaned_resampled.nii.gz'
-
-    directory= os.path.dirname(imgPath)
-    inPrefix= imgPath.split('.')[0]
-    prefix= os.path.split(inPrefix)[-1]
-    outPrefix = os.path.join(directory, 'harm', prefix)
-    N_shm= 6
-
-    b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
-    ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model)
+    pass
