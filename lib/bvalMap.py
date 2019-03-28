@@ -6,7 +6,6 @@ with warnings.catch_warnings():
     from dipy.io.image import load_nifti, save_nifti
     from dipy.io import read_bvals_bvecs
     from normalize import normalize_data
-    #from dipy.reconst.shm import normalize_data
     from dipy.segment.mask import applymask
     from scipy.io import savemat
 
