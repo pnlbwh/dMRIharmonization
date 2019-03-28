@@ -158,11 +158,6 @@ def template_masking(refMaskPath, targetMaskPath, templatePath, siteName):
 
     return templateMask
 
-def clip(data, L, H):
-    data[np.isnan(data)]= 0.
-    data= np.clip(data, L, H)
-
-    return data
 
 def smooth(data):
 
@@ -181,10 +176,10 @@ def stat_calc(ref, target, mask):
 
     delta= ref- target
     per_diff= 100*delta/(ref+eps)
-    per_diff= clip(per_diff, 100., -100.)
+    np.nan_to_num(per_diff).clip(max=100., min=-100., out= per_diff)
     per_diff_smooth= smooth(per_diff)
     scale= ref/(target+eps)
-    scale.clip(max=10., out= scale)
+    scale.clip(max=10., min= 0., out= scale)
 
     return (delta, per_diff, per_diff_smooth, scale)
 
