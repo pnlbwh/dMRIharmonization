@@ -209,24 +209,25 @@ The `harmonization.py` cli takes in the following arguments that are explained b
 
 # Tests
 
-A small test data is provided with each [release](https://github.com/pnlbwh/Harmonization-Python/releases). You may 
-run test as follows:
+A small test data is provided with each [release](https://github.com/pnlbwh/Harmonization-Python/releases). 
+
+## 1. pipeline
+You may test the whole pipeline as follows:
     
     cd lib/tests
     ./test_pipeline.sh
     
-NOTE: running the tests might take a while.
+NOTE: running the above test should take roughly an hour.
 
 `./pipeline_test.sh` will download test data, and run the whole processing pipeline on them. 
 If the test is successful and complete, you should see the following output on the command line. 
     
-    Printing statistics :
-    CONNECTOM mean FA:  0.5217237675408243
-    PRISMA mean FA before harmonization:  0.5072286796848892
-    PRISMA mean FA after harmonization:  0.5221998242139347
+    CONNECTOM mean FA:  0.9115503529641469
+    PRISMA mean FA before harmonization:  0.8011634268930871
+    PRISMA mean FA after harmonization:  0.8222395983556193
 
-Also, you may run 
-unittest as follows:
+## 2. unittest
+You may run smaller and faster unittest as follows:
     
     python -m unittest discover -v lib/tests/    
     
