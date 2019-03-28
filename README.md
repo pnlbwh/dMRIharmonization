@@ -57,7 +57,7 @@ The proposed method eliminates inter-site variability in acquisition parameters,
 while preserves inter-subject anatomical variability. 
 
 ![](doc/flowchart.png)
-See [](#reference) for more details
+See [Reference](#reference) for more details
 
 The method leverages on rotation invariant spherical harmonics (RISH) features derived from spherical harmonic coefficients. 
 In brief, the method constructs a scale map for each pair of reference and target sites. Applying the scale map to the 
@@ -145,7 +145,7 @@ If any of them does not exist, add that to your path:
     export PATH=$PATH:/directory/of/executable
     
 `conda` should already put the ANTs scripts in your path. However, if you choose to use pre-installed ANTs scripts, 
-you may need to define [ANTSPATH`](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath)
+you may need to define [ANTSPATH](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath)
 
 
 # Running
@@ -246,6 +246,8 @@ Each `\n` delimited line in the list file should have `,` seperated dwi and mask
     ...
     ...
 
+It is assumed that *.bval* and *.bvec* are in the same location 
+and have the same prefix as that of the `dwi.nii.gz` image.
 
 # Site names
 
