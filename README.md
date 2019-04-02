@@ -4,10 +4,10 @@
 
 *dMRIharmonization* repository is developed by Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi, Brigham and Women's Hospital (Harvard Medical School).
 
-
 Table of Contents
 =================
 
+   * [Table of Contents](#table-of-contents)
    * [Multi-site dMRI harmonization](#multi-site-dmri-harmonization)
    * [Citation](#citation)
    * [Dependencies](#dependencies)
@@ -21,6 +21,8 @@ Table of Contents
          * [3. Configure your environment](#3-configure-your-environment)
    * [Running](#running)
    * [Tests](#tests)
+      * [1. pipeline](#1-pipeline)
+      * [2. unittest](#2-unittest)
    * [List of images](#list-of-images)
    * [Site names](#site-names)
    * [Multi threading](#multi-threading)
@@ -40,10 +42,12 @@ Table of Contents
    * [Debugging](#debugging)
          * [1. With the pipeline](#1-with-the-pipeline)
          * [2. Use seperately](#2-use-seperately)
+   * [Travel heads](#travel-heads)
    * [Caveats](#caveats)
    * [Reference](#reference)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
 
 # Multi-site dMRI harmonization
 
@@ -189,22 +193,23 @@ Upon successful installation, you should be able to see the help message
 
 The `harmonization.py` cli takes in the following arguments that are explained below.
 
-* --bvalMap VALUE:str
-* --create
-* --debug
-* --denoise
+* [--bvalMap VALUE:str](#2-bvalue-mapping)
+* [--create](#template-creation)
+* [--debug](#debugging)
+* [--denoise](#1-denoising)
 * --force
-* --harm_list VALUE:ExistingFile
-* --nproc VALUE:str
-* --nshm VALUE:str
-* --process
-* --ref_list VALUE:ExistingFile
-* --ref_name VALUE:str
-* --resample VALUE:str
-* --tar_list VALUE:ExistingFile
-* --tar_name VALUE:str
-* --template VALUE:str
-* --travelHeads
+* [--harm_list VALUE:ExistingFile](#2.-use-seperately)
+* [--nproc VALUE:str](#multi-threading)
+* [--nshm VALUE:str](#order-of-spherical-harmonics)
+* [--process](#data-harmonization)
+* [--ref_list VALUE:ExistingFile](#list-of-images)
+* [--ref_name VALUE:str](#site-names)
+* [--resample VALUE:str](#3-resampling)
+* [--tar_list VALUE:ExistingFile](#list-of-images)
+* [--tar_name VALUE:str](#site-names)
+* [--template VALUE:str](#template)
+* [--travelHeads](#travel-heads)
+
 
 
 # Tests
@@ -249,6 +254,9 @@ Each `\n` delimited line in the list file should have `,` seperated dwi and mask
 
 It is assumed that *.bval* and *.bvec* are in the same location 
 and have the same prefix as that of the `dwi.nii.gz` image.
+
+During template construction, you want to provide a **small list of images** to `--ref_list` and `--tar_list`. However, 
+provide a **complete list of images** you want to harmonize to `--tar_list` during [data harmonization](#data-harmonization)
 
 # Site names
 
@@ -316,13 +324,30 @@ and used for further processing.
  
 # Config   
     
-    pass
+With all the arguments passed to `harmonization.py` cli, a *config.ini* file is created in `lib/`. This file is used by 
+submodules of the harmonization pipeline during executation. A sample `config.ini` file looks like the following:
+
+    [DEFAULT]
+    N_shm = 6
+    N_proc = 8
+    resample = 1.5x1.5x1.5
+    bvalMap = 1000
+    denoise = 0
+    travelHeads = 0
+    debug = 1
+    diffusionMeasures = MD,FA,GFA
 
 # Template
-    pass
+
+Template directory is passed by `--template` arguments. It is primarily used by `antsMultivariateTemplateConstruction2.sh` 
+to save transform files. Then, various scales maps (*Scale_\*.nii.gz*) and mean templates (*Mean_\*.nii.gz*) 
+are created in this directory. There are other template files: 
+*Delta_\*.nii.gz*, *PercentageDiff_\*.nii.gz*, and *PercentageDiff_\*smooth.nii.gz*. You may look at them to know how good 
+has been the created template.
     
 # List of outputs
-    pass
+
+Several files are created down the pipeline. They are organized with proper folder hierarchy and naming:
     
 ## 1. Folders
 
@@ -331,38 +356,71 @@ and corresponding transform files. On the other hand `rish` folder stores RISH f
 
 ## 2. Files
     
-    pass
+The harmonization pipeline will generate a bunch of diffusion measures and RISH features. All 
+the measures are saved as *.nii.gz* format with associated *.bval* and *.bvec* where necessary. 
 
+Firstly, see the files with prefix *harmonized_* in target site image directories. They are the harmonized 
+diffusion weighted images.
+
+Secondly, you can look at files with suffix *_denoised.nii.gz*, *_bmapped.nii.gz*, and *_resampled.nii.gz*. 
+Denoising, bvalue mapping, and resampling are performed in the above order and files are saved with the last suffix 
+unless `--debug` option is used. In the latter case, files after each preprocessing step are saved.
+
+Finally, there are other files:
+    
+|         string         |             description                      |
+|------------------------|----------------------------------------------|
+|    \*Warped\*.nii.gz   |  warped to template space                    |
+|    \*_InMNI\*.nii.gz   |  warped to MNI space                         |
+|    ToSubjectSpace_\*   |  registration of template to subject space   |
 
       
 # Template creation
+    
+RISH features are diffusion measures are computed from all the input images. Images of two modalites: 
+*FA* and *L0* (RISH order 0) are provided as input to `antsMultivariateTemplateConstruction2.sh`. A `template0.nii.gz` is 
+created. Afterwards, various scales maps (*Scale_\*.nii.gz*) and mean templates (*Mean_\*.nii.gz*) 
+are created in `--template` directory. See [Reference](#referece) for details on the template construction method 
+and [Template](#Template) for list of outputs. A sample template construction command is given below:
 
-
-    python -m pdb \
-    /home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
-    --reference /home/tb571/Downloads/Harmonization-Python/test_data/ref_caselist.txt \
-    --target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
-    --template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
-    --travelHeads \
-    --force \
-    --N_shm 6 \
+    lib/harmonization.py \
+    --ref_list test_data/ref_caselist.txt \
+    --tar_list test_data/target_caselist.txt \
+    --ref_name REF \
+    --tar_name TAR \
+    --template test_data/template/ \
+    --nshm 6 \
+    --bvalMap 1000 \
+    --resample 1.5x1.5x1.5 \
+    --nproc 8 \
     --create
 
+Note: Replace each of the above paths with absolute path as needed.
+
+During template construction, you want to provide a **small list of images** to `--ref_list` and `--tar_list`. However, 
+provide a **complete list of images** you want to harmonize to `--tar_list` during [data harmonization](#data-harmonization)
 
 
 # Data harmonization
 
+After template creation is completed, there should be scales maps (*Scale_\*.nii.gz*) in the template directory. 
+The scale maps are used to scale RISH features of the reference site and then reconstruct diffusion weighted images. 
+See [Reference](#referece) for details on the signal reconstruction.
+    
+    lib/harmonization.py \
+    --tar_list test_data/target_caselist.txt \
+    --tar_name TAR \
+    --template test_data/template/ \
+    --nshm 6 \
+    --bvalMap 1000 \
+    --resample 1.5x1.5x1.5 \
+    --nproc 8 \
+    --process
 
-    python -m pdb \
-    /home/tb571/Downloads/Harmonization-Python/lib/harmonization.py \
-    --N_shm 6 \
-    --denoise \
-    --force \
-    --process \
-    --target /home/tb571/Downloads/Harmonization-Python/test_data/target_caselist.txt \
-    --template /home/tb571/Downloads/Harmonization-Python/test_data/template/ \
-    --travelHeads
+Note: Replace each of the above paths with absolute path as needed.
 
+During template construction, you want to provide a **small list of images** to `--ref_list` and `--tar_list`. However, 
+provide a **complete list of images** you want to harmonize to `--tar_list` during [data harmonization](#data-harmonization)
 
 
 # Debugging
@@ -413,7 +471,14 @@ If you would like to debug at a later time, you need to specify three images lis
     lib/harmonization.py --ref_list ref.txt.modified --tar_list target.csv --harm_list target.csv.modified.harmonized
 
 NOTE: You should run the pipeline first before debugging separately because `--debug` makes use of files created 
-in the pipeline. 
+in the pipeline.
+
+# Travel heads
+
+Traveling heads mean *same set of subjects scanned with different scanners*. 
+For example, scanning same set of people in Brigham and Women's Hospital and 
+Massachusetts General Hospital. Therefore, users should set `--travelHeads` 
+if they have same set of subjects across sites.
 
 # Caveats
 
