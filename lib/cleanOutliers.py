@@ -154,7 +154,7 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model):
 
     return (harmImg, harmMask)
 
-# def reconst(imgPath, maskPath, moving, templatePath, fm, fh, preFlag):
+
 def reconst(imgPath, maskPath, moving, templatePath, preFlag):
 
     if preFlag:
@@ -175,7 +175,6 @@ def reconst(imgPath, maskPath, moving, templatePath, preFlag):
 
     print(f'Reconstructing signal from {imgPath} rish features ...')
     harmImg, harmMask = ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model)
-    # fh.write(harmImg + ',' + harmMask + '\n')
 
     shutil.copyfile(inPrefix + '.bvec', harmImg.split('.')[0] + '.bvec')
     shutil.copyfile(inPrefix + '.bval', harmImg.split('.')[0] + '.bval')
