@@ -115,7 +115,7 @@ def denoising(dwi, mask=None):
         # sigmasq_2 > sigma_sq1 if signal components are represented in the eigenvalues
         t = np.where(sigmasq_2 < sigmasq_1)[0][0]
 
-        if t==[]:
+        if t.size==0:
             sigma[nn] = np.nan
             signal[:, :, nn] = X
             t = R
