@@ -7,6 +7,7 @@ with warnings.catch_warnings():
 
 from conversion import read_bvals, read_bvecs
 import numpy as np
+import sys
 
 np.set_printoptions(precision=5)
 # BINS= [-np.inf, -10, -5, -1, 0, 1, 5, 10, np.inf]
@@ -244,14 +245,19 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
 
 
 def main():
-    '''
-    This module is the gateway for testing equivalence between MATALAB and PYTHON harmonization results.
-    Specify a sample path in 'imgPath_py' and 'imgPath_mat' using *XYZ* for case, *ORDER* for shm order in sample path.
-    The program will replace *XYZ* with caseid obtained from provided caselist. It will also substitute *ORDER* with
-    proper spherical harmonic order upto N_shm given to
-    rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6) and
-    scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6)
-    '''
+    if sys.argv[1]=='-h' or sys.argv[1]=='--help':
+        print(
+'''
+This module is the gateway for testing equivalence between MATALAB and PYTHON harmonization results. 
+Edit 'compute_volumwise_diff.py' the module for computing volumewise difference over all cases in a site.
+Specify a sample path in 'imgPath_py' and 'imgPath_mat' using *XYZ* for case, *ORDER* for shm order in sample path.
+The program will replace *XYZ* with caseid obtained from provided caselist. It will also substitute *ORDER* with
+proper spherical harmonic order upto N_shm given to
+rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6) and
+scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6)
+'''
+            )
+        exit()
 
     case_file = '.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
                 'caselist.txt'
