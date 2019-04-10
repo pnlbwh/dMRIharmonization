@@ -443,11 +443,12 @@ should be almost equal to the mean FA of that of reference site.
 
 In details:
 
-* reference data is proprocessed, and registered to reference template space and then to MNI space ([IITmean_FA.nii.gz](http://www.iit.edu/~mri/IITHumanBrainAtlas.html))
+* reference data is proprocessed, and registered to reference template space and then to MNI space ([IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz))
 * unprocessed target data is directly registered to MNI space
 * harmonized target data is registered to target template space and then to MNI space
-* once the data are in MNI space, we calculate mean FA over the [IITmean_FA_skeleton.nii.gz](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) 
+* once the data are in MNI space, we calculate mean FA over the [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA_skeleton.nii.gz)
  
+NOTE: Download the above data and place them in `IITAtlas/` directory.
 
 The numbers should like like below:
 
@@ -494,3 +495,10 @@ should have `/` at the end. The pipeline appends one if there is not, but it is 
 Karayumak, S.C., Bouix, S., Ning, L., James, A., Crow, T., Shenton, M., Kubicki, M. and Rathi, Y., 2019. 
 Retrospective harmonization of multi-site diffusion MRI data acquired with different acquisition parameters. 
 Neuroimage, 184, pp.180-200.
+
+Zhang S, Arfanakis K. Evaluation of standardized and study-specific diffusion tensor imaging templates 
+of the adult human brain: Template characteristics, spatial normalization accuracy, and detection of small 
+inter-group FA differences. Neuroimage 2018;172:40-50.
+
+Tashrif Billah, Sylvain Bouix and Yogesh Rathi, Various MRI Conversion Tools, 
+https://github.com/pnlbwh/conversion, 2019, DOI: 10.5281/zenodo.2584003.
