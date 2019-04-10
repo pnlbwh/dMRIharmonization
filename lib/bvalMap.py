@@ -2,22 +2,19 @@
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
-
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.io import read_bvals_bvecs
-    from normalize import normalize_data
     from dipy.segment.mask import applymask
-    from scipy.io import savemat
+from normalize import normalize_data
 
 import numpy as np
 
-def remapBval(dwi, bvals, bNew):
+def remapBval(dwi, mask, bvals, bNew):
 
     # find b0
     where_b0= np.where(bvals == 0)[0]
 
     # normalize dwi by b0
-    dwiPrime, b0= normalize_data(dwi, where_b0)
+    dwiPrime, b0 = normalize_data(dwi, where_b0, mask)
+    # dwiPrime is already masked
 
     # scale signal to the power of bNew/b
     ratio= []
