@@ -14,14 +14,12 @@ from normalize import normalize_data, find_b0
 
 import numpy as np
 import os
-eps= 2.2204e-16
 
 def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
     data, affine= load_nifti(imgPath)
     mask_data, _= load_nifti(maskPath)
 
-    # the if condition shouldn't be necessary
     if not qb_model:
         print('Computing shm_coeff of ', imgPath)
         bvals, bvecs = read_bvals_bvecs(inPrefix+'.bval', inPrefix+'.bvec')
@@ -30,7 +28,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
         qb_model = QballModel(gtab, sh_order=N_shm)
 
         # save baseline image
-        b0 = find_b0(data, np.where(bvals==0)[0])
+        b0 = find_b0(data, where_b0=np.where(qb_model.gtab.b0s_mask)[0])
         if not os.path.exists(inPrefix+'_bse.nii.gz'):
             save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine= affine)
     else:
@@ -40,7 +38,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
     # inserting correct shm_coeff computation block ---------------------------------
     smooth= 0.006
     data = applymask(data, mask_data)
-    data_norm, _ = normalize_data(data, where_b0=qb_model._where_b0s)
+    data_norm, _ = normalize_data(data, where_b0=np.where(qb_model.gtab.b0s_mask)[0])
 
 
     L= qb_model.n*(qb_model.n+1)
