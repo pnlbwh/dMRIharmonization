@@ -32,15 +32,13 @@ def antsReg(img, mask, mov, outPrefix):
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
-                               '-o', outPrefix,
-                               '-n', str(N_proc)]), shell= True)
+                               '-o', outPrefix]), shell= True)
     else:
         check_call((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
-                               '-o', outPrefix,
-                               '-n', str(N_proc)]), shell= True)
+                               '-o', outPrefix]), shell= True)
 
 def antsApply(templatePath, directory, prefix):
 
@@ -89,13 +87,12 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model):
     mapped_cs= []
     shs_same_level= [[0, 1], [1, 6], [6, 15], [15, 28], [28, 45]]
 
+    mask, _ = load_nifti(maskPath)
     for i in range(0, N_shm+1, 2):
 
         # load data and mask
         fileName= os.path.join(directory, 'harm', f'Scale_L{i}_{prefix}.nii.gz')
         img, affine = load_nifti(fileName)
-        mask, _ = load_nifti(maskPath)
-
 
         if i==0: # compute the skullRingMask from 0th shm
 
@@ -117,7 +114,7 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model):
         denoisedImg = tmp[n_zero:-n_zero, n_zero:-n_zero, n_zero:-n_zero]
 
 
-        # for i=0, create new mask over denoisedImg, save it as harmonzied_{prefix}_mask
+        # for i=0, create new mask over denoisedImg, save it as harmonized_{prefix}_mask
         if i==0:
             mask_final= findLargestConnectMask(denoisedImg, mask)
             # mask_final= binary_dilation(mask_final, generate_binary_structure(3,1))*1
@@ -129,7 +126,6 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model):
         denoisedImg= applymask(denoisedImg, mask_final)
         for level in range(shs_same_level[ind][0], shs_same_level[ind][1]):
             mapped_cs.append(denoisedImg * shm_coeff[ :,:,:,level])
-
 
     S_hat= np.dot(np.moveaxis(mapped_cs, 0, -1), B.T)
     np.nan_to_num(S_hat).clip(min= 0., max= 1., out= S_hat)
@@ -159,7 +155,6 @@ def reconst(imgPath, maskPath, moving, templatePath, preFlag):
 
     if preFlag:
         imgPath, maskPath = preprocessing(imgPath, maskPath)
-        # fm.write(imgPath + ',' + maskPath + '\n')
 
     b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath)
 
@@ -175,7 +170,6 @@ def reconst(imgPath, maskPath, moving, templatePath, preFlag):
 
     print(f'Reconstructing signal from {imgPath} rish features ...')
     harmImg, harmMask = ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model)
-
     shutil.copyfile(inPrefix + '.bvec', harmImg.split('.')[0] + '.bvec')
     shutil.copyfile(inPrefix + '.bval', harmImg.split('.')[0] + '.bval')
 
