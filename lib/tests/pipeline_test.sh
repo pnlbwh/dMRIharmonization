@@ -15,7 +15,7 @@ IFS=" = ", read -r _ v < ../_version.py
 __version__=`echo $v | xargs`
 
 # download test data
-test_data=connectom_prisma
+test_data=connectom_prisma # change this value if test data name is changed
 wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
 tar -xzvf ${test_data}.zip
 
