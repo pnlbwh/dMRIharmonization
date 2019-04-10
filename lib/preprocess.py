@@ -28,6 +28,7 @@ bvalMap= float(config['DEFAULT']['bvalMap'])
 resample= config['DEFAULT']['resample']
 if resample=='0':
     resample = 0
+debug = int(config['DEFAULT']['debug'])
 
 def write_bvals(bval_file, bvals):
     with open(bval_file, 'w') as f:
@@ -90,7 +91,7 @@ def preprocessing(imgPath, maskPath):
     # load signal attributes for pre-processing ----------------------------------------------------------------
     imgPath= nrrd2nifti(imgPath)
     lowRes = load(imgPath)
-    lowResImg = lowRes.get_data()
+    lowResImg = lowRes.get_data().astype('float')
     lowResImgHdr = lowRes.header
 
     maskPath= nrrd2nifti(maskPath)
@@ -111,14 +112,24 @@ def preprocessing(imgPath, maskPath):
         print('Denoising ', imgPath)
         lowResImg, _ = denoising(lowResImg, lowResMask)
         suffix = '_denoised'
-        # save_nifti(imgPath.split('.')[0]+'_denoised.nii.gz', lowResImg, lowResImgHdr.affine)
+        if debug:
+            outPrefix= imgPath.split('.')[0]+suffix
+            save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine)
+            shutil.copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
+            shutil.copyfile(inPrefix + '.bval', inPrefix + '.bval')
+            dti_harm(outPrefix+'.nii.gz', maskPath)
 
     # modifies data, and bvals
     if bvalMap:
         print('B value mapping ', imgPath)
-        lowResImg, bvals = remapBval(lowResImg, bvals, bvalMap)
+        lowResImg, bvals = remapBval(lowResImg, lowResMask, bvals, bvalMap)
         suffix = '_bmapped'
-        # save_nifti(imgPath.split('.')[0]+'_bmapped.nii.gz', lowResImg, lowResImgHdr.affine)
+        if debug:
+            outPrefix= imgPath.split('.')[0]+suffix
+            save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine)
+            shutil.copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
+            write_bvals(outPrefix + '.bval', bvals)
+            dti_harm(outPrefix+'.nii.gz', maskPath)
 
     # modifies data, mask, and headers
     if resample:
@@ -133,7 +144,7 @@ def preprocessing(imgPath, maskPath):
     # save pre-processed data; resampled data is saved inside resampling() -------------------------------------
     if (denoise or bvalMap) and suffix!= '_resampled':
         imgPath = inPrefix + suffix + '.nii.gz'
-        save_nifti(imgPath, lowResImg, lowResImgHdr.get_qform())
+        save_nifti(imgPath, lowResImg, lowRes.affine)
 
     if suffix:
         shutil.copyfile(inPrefix + '.bvec', inPrefix + suffix + '.bvec')
