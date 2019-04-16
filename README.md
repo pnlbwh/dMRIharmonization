@@ -31,9 +31,9 @@ Table of Contents
    * [Number of zero padding](#number-of-zero-padding)
    * [NRRD support](#nrrd-support)
    * [Preprocessing](#preprocessing)
-         * [1. Denoising](#1-denoising)
-         * [2. Bvalue mapping](#2-bvalue-mapping)
-         * [3. Resampling](#3-resampling)
+      * [1. Denoising](#1-denoising)
+      * [2. Bvalue mapping](#2-bvalue-mapping)
+      * [3. Resampling](#3-resampling)
    * [Config](#config)
    * [Template](#template)
    * [List of outputs](#list-of-outputs)
@@ -42,14 +42,16 @@ Table of Contents
    * [Template creation](#template-creation)
    * [Data harmonization](#data-harmonization)
    * [Debugging](#debugging)
-         * [1. With the pipeline](#1-with-the-pipeline)
-         * [2. Use seperately](#2-use-seperately)
-         * [3. With a list of FA images](#3-with-a-list-of-fa-images)
+      * [1. With the pipeline](#1-with-the-pipeline)
+      * [2. Use seperately](#2-use-seperately)
+      * [3. With a list of FA images](#3-with-a-list-of-fa-images)
    * [Travel heads](#travel-heads)
    * [Caveats](#caveats)
    * [Reference](#reference)
 
-Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
+Table of Contents created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
 
 
 # Multi-site dMRI harmonization
@@ -104,7 +106,7 @@ Python 3, and FSL (ignore the one(s) you have already):
 
 ### Python 3
 
-Download [Miniconda Python 3.6 bash installer](https://conda.io/miniconda.html) (32/64-bit based on your environment):
+Download [Miniconda Python 3.6 bash installer](https://docs.conda.io/en/latest/miniconda.html) (32/64-bit based on your environment):
     
     sh Miniconda3-latest-Linux-x86_64.sh -b # -b flag is for license agreement
 
@@ -328,15 +330,15 @@ See Tashrif Billah, Sylvain Bouix and Yogesh Rathi, Various MRI Conversion Tools
 There are three preprocessing steps. More than one step can be specified at a time. However, they are performed in 
 the following order.
 
-### 1. Denoising
+## 1. Denoising
     
     --denoise        # turn on this flag to denoise voxel data
 
-### 2. Bvalue mapping
+## 2. Bvalue mapping
 
     --bvalMap VALUE  # specify a bmax to scale bvalues into    
 
-### 3. Resampling
+## 3. Resampling
 
     --resample VALUE # voxel size MxNxO to resample into
 
@@ -461,7 +463,7 @@ If the three data sets are brought into a common space, then looking at the mean
 we can comment on the goodness of harmonization. If data is properly harmonized, then mean FA of the harmonized target 
 should be almost equal to the mean FA of that of reference site.
 
-[In details](#debugging-details):
+In details:
 
 * reference data is proprocessed, and registered to reference template space and then to MNI space ([IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz))
 * unprocessed target data is directly registered to MNI space
@@ -482,10 +484,10 @@ for all the site images after harmonization increased to be almost equal to that
 
 Now there are two ways to debug:
 
-### 1. With the pipeline 
+## 1. With the pipeline 
 Use `--debug` flag with any (or all) of `--create` and `--process`
 
-### 2. Use seperately 
+## 2. Use seperately 
 If you would like to debug at a later time, you need to specify three images lists:
 
 * `--ref_list`: use the reference list with `.modified` extension
@@ -497,7 +499,7 @@ If you would like to debug at a later time, you need to specify three images lis
 NOTE: You should run the pipeline first before debugging separately because `--debug` makes use of files created 
 in the pipeline.
 
-### 3. With a list of FA images
+## 3. With a list of FA images
 The repository provides a more discrete discrete script for finding the goodness of harmonization. 
 
 `$ lib/tests/fa_skeleton_test.py --help`
@@ -518,7 +520,7 @@ The repository provides a more discrete discrete script for finding the goodness
                             {site}_Mask.nii.gz is located
 
 This script does not depend of registration performed during the harmonization process. Rather, it performs all the 
-steps mentioned [above](#debugging-details) and computes mean FA over skeleton across all subjects 
+steps mentioned above ([Debugging: In details](#debugging)) and computes mean FA over skeleton across all subjects 
 in a site.
 
 # Travel heads
