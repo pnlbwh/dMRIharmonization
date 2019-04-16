@@ -54,7 +54,7 @@ scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6)
         mat.append(img.get_data()[:pyX, :pyY, :pyZ])
 
         ind= int(i/2)
-        save_nifti(f'diff_L{ind}.nii.gz', py[ind]-mat[ind], affine= img.affine)
+        save_nifti(f'diff_L{ind}.nii.gz', py[ind]-mat[ind], affine= img.affine, header= img.header)
 
 
     mat= np.array(mat)

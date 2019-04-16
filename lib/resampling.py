@@ -1,19 +1,9 @@
 #!/usr/bin/env python
 
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.segment.mask import applymask
-    import nibabel as nib
-
-import numpy as np
 from skimage.transform import resize
 from scipy.ndimage import binary_opening, generate_binary_structure
-from subprocess import check_call
 from normalize import normalize_data, find_b0
-
+from util import *
 
 def save_high_res(fileName, sp_high, lowResImgHdr, highResImg):
 
@@ -24,7 +14,7 @@ def save_high_res(fileName, sp_high, lowResImgHdr, highResImg):
     scale= np.diag((sp_high/sp_low).tolist()+[1.])
     imgHdrOut.set_sform(imgHdrOut.get_sform() @ scale)
     imgHdrOut.set_qform(imgHdrOut.get_qform() @ scale)
-    save_nifti(fileName, highResImg, affine= imgHdrOut.get_sform(), hdr=imgHdrOut)
+    save_nifti(fileName, highResImg, affine= imgHdrOut.get_best_affine(), hdr=imgHdrOut)
 
 
 def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals):
@@ -50,7 +40,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     highResMaskPath = lowResMaskPath.split('.')[0] + '_resampled.nii.gz'
     highResMask= resize(lowResMask.astype('float'), (sx, sy, sz), order= 1, mode= 'constant') # order 1 for linear interpolation
     highResMask= binary_opening(highResMask >= 0.5, structure=generate_binary_structure(3, 1)) * 1
-    save_high_res(highResMaskPath, sp_high, lowResMaskHdr, highResMask.astype('int16'))
+    save_high_res(highResMaskPath, sp_high, lowResMaskHdr, highResMask.astype('uint8'))
 
 
     # resample the b0 ----------------------------------------------------------------
@@ -63,7 +53,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     highResB0Path = lowResImgPath.split('.')[0] + '_resampled_bse.nii.gz'
     check_call(['unring.a64', highResB0PathTmp, highResB0Path])
     check_call(['rm', highResB0PathTmp])
-    b0_gibs = nib.load(highResB0Path).get_data()
+    b0_gibs = load(highResB0Path).get_data()
     np.nan_to_num(b0_gibs).clip(min= 0., out= b0_gibs) # using min= 1. is unnecessary
 
     # defining lh_max and lh_min separately to deal with memory error
@@ -92,7 +82,4 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
 if __name__=='__main__':
     pass
-
-
-
 

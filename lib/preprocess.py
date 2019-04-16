@@ -1,16 +1,7 @@
-import os, shutil, configparser, multiprocessing
-import numpy as np
+import multiprocessing
 from conversion import nifti_write
 
-
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.segment.mask import applymask
-    from dipy.io import read_bvals_bvecs
-    from nibabel import load
-
+from util import *
 from denoising import denoising
 from bvalMap import remapBval
 from resampling import resampling
@@ -114,7 +105,7 @@ def preprocessing(imgPath, maskPath):
         suffix = '_denoised'
         if debug:
             outPrefix= imgPath.split('.')[0]+suffix
-            save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine)
+            save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine, lowResImgHdr)
             shutil.copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
             shutil.copyfile(inPrefix + '.bval', inPrefix + '.bval')
             dti_harm(outPrefix+'.nii.gz', maskPath)
@@ -126,7 +117,7 @@ def preprocessing(imgPath, maskPath):
         suffix = '_bmapped'
         if debug:
             outPrefix= imgPath.split('.')[0]+suffix
-            save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine)
+            save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine, lowResImgHdr)
             shutil.copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
             write_bvals(outPrefix + '.bval', bvals)
             dti_harm(outPrefix+'.nii.gz', maskPath)
@@ -144,7 +135,7 @@ def preprocessing(imgPath, maskPath):
     # save pre-processed data; resampled data is saved inside resampling() -------------------------------------
     if (denoise or bvalMap) and suffix!= '_resampled':
         imgPath = inPrefix + suffix + '.nii.gz'
-        save_nifti(imgPath, lowResImg, lowRes.affine)
+        save_nifti(imgPath, lowResImg, lowRes.affine, lowResImgHdr)
 
     if suffix:
         shutil.copyfile(inPrefix + '.bvec', inPrefix + suffix + '.bvec')
