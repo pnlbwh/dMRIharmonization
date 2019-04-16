@@ -100,7 +100,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
 
         # load python
         img_py = nib.load(imgPath_py).get_data()
-
+        hdr= img_py.header
         # keep only the first b0
         bvals = np.array(read_bvals(imgPath_py.split('.')[0] + '.bval'))
         img_py= stack_one_b0(bvals, dwi= img_py)
@@ -118,7 +118,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
 
         # save the difference mask
         affine = nib.load(imgPath_py).affine
-        nib.save(nib.Nifti1Image(diff, affine), imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
+        nib.Nifti1Image(diff, affine, hdr).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
 
 
 
