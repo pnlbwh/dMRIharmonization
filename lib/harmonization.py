@@ -2,13 +2,9 @@
 
 from plumbum import cli
 from distutils.spawn import find_executable
-import os, shutil, psutil, multiprocessing
-import numpy as np
+import multiprocessing, psutil
 
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    from dipy.io.image import load_nifti
+from util import *
 
 N_CPU= psutil.cpu_count()
 SCRIPTDIR= os.path.dirname(__file__)
@@ -64,7 +60,7 @@ class pipeline(cli.Application):
         ['--tar_list'],
         cli.ExistingFile,
         help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
-        mandatory=True)
+        mandatory=False)
 
     harm_csv = cli.SwitchAttr(
         ['--harm_list'],
@@ -86,6 +82,11 @@ class pipeline(cli.Application):
         '--nproc',
         help= 'number of processes/threads to use (-1 for all available, may slow down your system)',
         default= 4)
+
+    N_zero = cli.SwitchAttr(
+        '--nzero',
+        help= 'number of zero padding for denoising skull region during signal reconstruction',
+        default= 10)
 
     force = cli.Flag(
         ['--force'],
@@ -184,8 +185,8 @@ class pipeline(cli.Application):
         # ATTN: antsMultivariateTemplateConstruction2.sh requires absolute path for caselist
         antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
 
-        # load templateAffine
-        templateAffine= load_nifti(os.path.join(self.templatePath, 'template0.nii.gz'))[1]
+        # # load templateHdr
+        templateHdr= load(os.path.join(self.templatePath, 'template0.nii.gz')).header
 
 
         # warp mask, dti, and rish bands
@@ -197,9 +198,9 @@ class pipeline(cli.Application):
         pool.join()
 
         print('dti statistics: mean, std(FA, MD) calculation of reference site')
-        refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateAffine)
+        refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateHdr)
         print('dti statistics: mean, std(FA, MD) calculation of target site')
-        targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateAffine)
+        targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateHdr)
 
         print('masking dti statistics of reference site')
         _= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.reference)
@@ -207,16 +208,16 @@ class pipeline(cli.Application):
         templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target)
 
         print('rish_statistics mean, std(L{i}) calculation of reference site')
-        rish_stat(self.reference, imgs, self.templatePath, templateAffine)
+        rish_stat(self.reference, imgs, self.templatePath, templateHdr)
         print('rish_statistics mean, std(L{i}) calculation of target site')
-        rish_stat(self.target, imgs, self.templatePath, templateAffine)
+        rish_stat(self.target, imgs, self.templatePath, templateHdr)
 
         print('calculating scale map for diffusionMeasures')
-        difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
+        difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
                         'dti', templateMask, self.diffusionMeasures)
 
         print('calculating scale map for rishFeatures')
-        difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateAffine,
+        difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
                         'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)])
 
 
@@ -352,6 +353,7 @@ class pipeline(cli.Application):
             f.write('[DEFAULT]\n')
             f.write(f'N_shm = {self.N_shm}\n')
             f.write(f'N_proc = {self.N_proc}\n')
+            f.write(f'N_zero = {self.N_zero}\n')
             f.write(f'resample = {self.resample if self.resample else 0}\n')
             f.write(f'bvalMap = {self.bvalMap if self.bvalMap else 0}\n')
             f.write(f'denoise = {1 if self.denoise else 0}\n')
