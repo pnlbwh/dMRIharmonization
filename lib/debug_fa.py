@@ -2,10 +2,10 @@
 
 from plumbum.cmd import antsApplyTransforms
 from plumbum import FG
-from lib.preprocess import read_caselist
-from lib.cleanOutliers import antsReg
+from preprocess import read_caselist
+from cleanOutliers import antsReg
 import multiprocessing
-from lib.util import *
+from util import *
 
 SCRIPTDIR= os.path.dirname(__file__)
 ROOTDIR= os.path.abspath(os.path.join(SCRIPTDIR, '..'))
