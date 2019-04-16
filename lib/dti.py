@@ -1,13 +1,7 @@
 from plumbum.cmd import dtifit
 from plumbum import FG
 
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.reconst.odf import gfa
-    from dipy.segment.mask import applymask
+from util import *
 
 def dti(imgPath, maskPath, inPrefix, outPrefix):
 
@@ -19,11 +13,11 @@ def dti(imgPath, maskPath, inPrefix, outPrefix):
            '-o', outPrefix
             ] & FG
 
-    vol, affine= load_nifti(imgPath)
-    mask, _= load_nifti(maskPath)
-    masked_vol= applymask(vol, mask)
+    vol= load(imgPath)
+    mask= load(maskPath)
+    masked_vol= applymask(vol.get_data(), mask.get_data())
     gfa_vol= gfa(masked_vol)
-    save_nifti(outPrefix+'_GFA.nii.gz', gfa_vol, affine)
+    save_nifti(outPrefix+'_GFA.nii.gz', gfa_vol, vol.affine, vol.header)
 
 
 if __name__ == '__main__':

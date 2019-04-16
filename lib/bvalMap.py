@@ -1,11 +1,7 @@
 #!/usr/bin/env python
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    from dipy.segment.mask import applymask
-from normalize import normalize_data
 
-import numpy as np
+from util import *
+from normalize import normalize_data
 
 def remapBval(dwi, mask, bvals, bNew):
 
