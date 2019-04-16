@@ -1,8 +1,9 @@
 ![](doc/pnl-bwh-hms.png)
 
-[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.2584271.svg)](https://doi.org/10.5281/zenodo.2584271) [![Python](https://img.shields.io/badge/Python-3.6-green.svg)]() [![Platform](https://img.shields.io/badge/Platform-linux--64%20%7C%20osx--64-orange.svg)]()
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.2584275.svg)](https://doi.org/10.5281/zenodo.2584275) [![Python](https://img.shields.io/badge/Python-3.6-green.svg)]() [![Platform](https://img.shields.io/badge/Platform-linux--64%20%7C%20osx--64-orange.svg)]()
 
 *dMRIharmonization* repository is developed by Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi, Brigham and Women's Hospital (Harvard Medical School).
+
 
 Table of Contents
 =================
@@ -27,6 +28,7 @@ Table of Contents
    * [Site names](#site-names)
    * [Multi threading](#multi-threading)
    * [Order of spherical harmonics](#order-of-spherical-harmonics)
+   * [Number of zero padding](#number-of-zero-padding)
    * [NRRD support](#nrrd-support)
    * [Preprocessing](#preprocessing)
          * [1. Denoising](#1-denoising)
@@ -42,6 +44,7 @@ Table of Contents
    * [Debugging](#debugging)
          * [1. With the pipeline](#1-with-the-pipeline)
          * [2. Use seperately](#2-use-seperately)
+         * [3. With a list of FA images](#3-with-a-list-of-fa-images)
    * [Travel heads](#travel-heads)
    * [Caveats](#caveats)
    * [Reference](#reference)
@@ -73,7 +76,7 @@ target site, it aims to remove inter-site variability.
 If this repository is useful in your research, please cite as below: 
 
 Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi *Multi-site Diffusion MRI Harmonization*, 
-https://github.com/pnlbwh/dMRIharmoniziation, 2018, DOI: 10.5281/zenodo.2584271
+https://github.com/pnlbwh/dMRIharmoniziation, 2019, DOI: 10.5281/zenodo.2584275
 
 
 # Dependencies
@@ -130,6 +133,12 @@ Now that you have installed the prerequisite software, you are ready to install 
     conda activate harmonization        # should introduce '(harmonization)' in front of each line
 
 
+Alternatively, if you already have ANTs, you can continue using your python environment by directly installing 
+the prerequisite libraries:
+
+    pip install -r requirements.txt --upgrade
+
+
 ### 3. Configure your environment
 
 Make sure the following executables are in your path:
@@ -179,13 +188,14 @@ Upon successful installation, you should be able to see the help message
         --nproc VALUE:str                   number of processes/threads to use (-1 for all available, may slow down your system);
                                             the default is 8
         --nshm VALUE:str                    spherical harmonic order; the default is 6
+        --nzero VALUE:str                   number of zero padding for denoising skull region during signal reconstruction; the default is 10
         --process                           turn on this flag to harmonize
         --ref_list VALUE:ExistingFile       reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
                                             dwi2,mask2 ...
         --ref_name VALUE:str                reference site name; required
         --resample VALUE:str                voxel size MxNxO to resample into
         --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...; required
+                                            dwi2,mask2 ...
         --tar_name VALUE:str                target site name; required
         --template VALUE:str                template directory; required
         --travelHeads                       travelling heads
@@ -201,6 +211,7 @@ The `harmonization.py` cli takes in the following arguments that are explained b
 * [--harm_list VALUE:ExistingFile](#2.-use-seperately)
 * [--nproc VALUE:str](#multi-threading)
 * [--nshm VALUE:str](#order-of-spherical-harmonics)
+* [--nzero VALUE:str](#number-of-zero-padding)
 * [--process](#data-harmonization)
 * [--ref_list VALUE:ExistingFile](#list-of-images)
 * [--ref_name VALUE:str](#site-names)
@@ -227,9 +238,9 @@ NOTE: running the above test should take roughly an hour.
 `./pipeline_test.sh` will download test data*, and run the whole processing pipeline on them. 
 If the test is successful and complete, you should see the following output on the command line. 
     
-    CONNECTOM mean FA:  0.9115503529641469
-    PRISMA mean FA before harmonization:  0.8011634268930871
-    PRISMA mean FA after harmonization:  0.8222395983556193
+    CONNECTOM mean FA:  0.675917931134666
+    PRISMA mean FA before harmonization:  0.8008729791383536
+    PRISMA mean FA after harmonization:  0.6366103024088171
 
 
 \* If there is any problem downloading test data, try manually downloading and unzipping it to `lib/tests/` folder.
@@ -295,13 +306,21 @@ is limited by the lowest number of gradients present in the diffusion images bet
 |    8     |            45         |           45            |
 
 
+# Number of zero padding
+
+During signal reconstruction, skull region can be noisy. So, each RISH feature is zero padded, median filtered in the 
+skull region, and then used for signal reconstruction. The more noisy data you have, the more number of zeros you want 
+to pad. The value should be 5-20.
+
+    --nzero 10
+
 # NRRD support
 
 The pipeline is written for NIFTI image format. However, NRRD support is incorporated through [NIFTI --> NRRD](https://github.com/pnlbwh/Harmonization-Python/blob/parallel/lib/preprocess.py#L78) 
 conversion on the fly.
 
-See Tashrif Billah, Isaiah Norton, Ryan Eckbo, and Sylvain Bouix, Processing pipeline for anatomical and diffusion weighted images, 
-https://github.com/pnlbwh/pnlpipe, 2018, DOI: 10.5281/zenodo.2584271 for more details on the conversion method.
+See Tashrif Billah, Sylvain Bouix and Yogesh Rathi, Various MRI Conversion Tools, https://github.com/pnlbwh/conversion, 
+2019, DOI: 10.5281/zenodo.2584003 for more details on the conversion method.
 
 
 # Preprocessing
@@ -333,6 +352,7 @@ submodules of the harmonization pipeline during executation. A sample `config.in
     [DEFAULT]
     N_shm = 6
     N_proc = 8
+    N_zero = 10
     resample = 1.5x1.5x1.5
     bvalMap = 1000
     denoise = 0
@@ -441,7 +461,7 @@ If the three data sets are brought into a common space, then looking at the mean
 we can comment on the goodness of harmonization. If data is properly harmonized, then mean FA of the harmonized target 
 should be almost equal to the mean FA of that of reference site.
 
-In details:
+[In details](#debugging-details):
 
 * reference data is proprocessed, and registered to reference template space and then to MNI space ([IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz))
 * unprocessed target data is directly registered to MNI space
@@ -470,12 +490,36 @@ If you would like to debug at a later time, you need to specify three images lis
 
 * `--ref_list`: use the reference list with `.modified` extension
 * `--tar_list`: use the unprocessed target list **without** the `.modified` extension
-* `--harm_list`: use the harmonized target list with `.harmonized` extension
+* `--harm_list`: use the harmonized target list that has `.harmonized` extension
 
     lib/harmonization.py --ref_list ref.txt.modified --tar_list target.csv --harm_list target.csv.modified.harmonized
 
 NOTE: You should run the pipeline first before debugging separately because `--debug` makes use of files created 
 in the pipeline.
+
+### 3. With a list of FA images
+The repository provides a more discrete discrete script for finding the goodness of harmonization. 
+
+`$ lib/tests/fa_skeleton_test.py --help`
+    
+    usage: fa_skeleton_test.py [-h] -i INPUT -s SITE -t TEMPLATE
+    
+    Warps diffusion measures (FA, MD, GFA) to template space and then to subject
+    space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      -i INPUT, --input INPUT
+                            input list of FA images
+      -s SITE, --site SITE  site name for locating template FA and mask in
+                            tempalte directory
+      -t TEMPLATE, --template TEMPLATE
+                            template directory where Mean_{site}_FA.nii.gz and
+                            {site}_Mask.nii.gz is located
+
+This script does not depend of registration performed during the harmonization process. Rather, it performs all the 
+steps mentioned [above](#debugging-details) and computes mean FA over skeleton across all subjects 
+in a site.
 
 # Travel heads
 
