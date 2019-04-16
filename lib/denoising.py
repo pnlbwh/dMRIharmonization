@@ -1,15 +1,5 @@
 #!/usr/bin/env python
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-
-    from dipy.io.image import load_nifti
-    from dipy.io import read_bvals_bvecs
-
-from scipy.io import savemat
 import numpy as np
-
-
 
 def denoising(dwi, mask=None):
 
