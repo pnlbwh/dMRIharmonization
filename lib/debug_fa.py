@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-import warnings, os, configparser, multiprocessing
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    import nibabel as nib
-
 from plumbum.cmd import antsApplyTransforms
 from plumbum import FG
-from preprocess import read_caselist
-from cleanOutliers import antsReg
+from lib.preprocess import read_caselist
+from lib.cleanOutliers import antsReg
+import multiprocessing
+from lib.util import *
 
 SCRIPTDIR= os.path.dirname(__file__)
 ROOTDIR= os.path.abspath(os.path.join(SCRIPTDIR, '..'))
@@ -19,7 +16,7 @@ config.read(os.path.join(SCRIPTDIR,'config.ini'))
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
 
-def register_reference(imgPath, mniTmp, warp2mni, trans2mni):
+def register_reference(imgPath, warp2mni, trans2mni):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
@@ -44,7 +41,7 @@ def register_reference(imgPath, mniTmp, warp2mni, trans2mni):
         ] & FG
 
 
-def register_target(imgPath, mniTmp):
+def register_target(imgPath):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
@@ -74,7 +71,7 @@ def register_target(imgPath, mniTmp):
         ] & FG
 
 
-def register_harmonized(imgPath, mniTmp, warp2mni, trans2mni, templatePath, siteName):
+def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
@@ -124,11 +121,11 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
     for imgPath in imgs:
 
         if ref:
-            pool.apply_async(func= register_reference, args= (imgPath, mniTmp, warp2mni, trans2mni, ))
+            pool.apply_async(func= register_reference, args= (imgPath, warp2mni, trans2mni, ))
         elif tar_unproc:
-            pool.apply_async(func= register_target, args= (imgPath, mniTmp, ))
+            pool.apply_async(func= register_target, args= (imgPath, ))
         elif tar_harm:
-            pool.apply_async(func= register_harmonized, args= (imgPath, warp2mni, trans2mni, mniTmp, templatePath, siteName, ))
+            pool.apply_async(func= register_harmonized, args= (imgPath, warp2mni, trans2mni, templatePath, siteName, ))
 
     pool.close()
     pool.join()
@@ -140,7 +137,7 @@ def analyzeStat(file):
     :return: mean of the images
     '''
 
-    skel= nib.load(os.path.join(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
+    skel= load(os.path.join(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
     skel_mask= (skel.get_data()>0)*1.
 
     imgs, _ = read_caselist(file)
@@ -152,7 +149,7 @@ def analyzeStat(file):
         prefix = os.path.split(inPrefix)[-1]
 
         faImg= os.path.join(directory, 'dti', prefix + f'_InMNI_FA.nii.gz')
-        data= nib.load(faImg).get_data()
+        data= load(faImg).get_data()
         temp= data*skel_mask
         meanAttr.append(temp[temp>0].mean())
 
