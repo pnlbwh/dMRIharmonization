@@ -1,28 +1,24 @@
 #!/usr/bin/env python
 
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.io import read_bvals_bvecs
-    from dipy.core.gradients import gradient_table
-    from dipy.reconst.shm import QballModel
-    from dipy.segment.mask import applymask
-
 from normalize import normalize_data, find_b0
-
-import numpy as np
-import os
+from util import *
 
 def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
-    data, affine= load_nifti(imgPath)
-    mask_data, _= load_nifti(maskPath)
+    img= load(imgPath)
+    data= img.get_data()
+    affine= img.affine
+    hdr= img.header
+    mask_data= load(maskPath).get_data()
 
     if not qb_model:
         print('Computing shm_coeff of ', imgPath)
         bvals, bvecs = read_bvals_bvecs(inPrefix+'.bval', inPrefix+'.bvec')
+
+        # make bvals and bvecs full sampled to encounter reconstruction error in cleanOutliers.py
+        bvals= np.append(bvals, bvals)
+        bvecs= np.append(bvecs, -bvecs, axis= 0)
+        data= np.append(data, data, axis=3)
 
         gtab = gradient_table(bvals,  bvecs)
         qb_model = QballModel(gtab, sh_order=N_shm)
@@ -30,7 +26,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
         # save baseline image
         b0 = find_b0(data, where_b0=np.where(qb_model.gtab.b0s_mask)[0])
         if not os.path.exists(inPrefix+'_bse.nii.gz'):
-            save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine= affine)
+            save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine, hdr)
     else:
         b0= None
 
@@ -54,7 +50,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
     for i in range(0, N_shm+1, 2):
         ind= int(i/2)
         temp= np.sum(shm_coeff_squared[:,:,:,shs_same_level[ind][0]:shs_same_level[ind][1]], axis= 3)
-        save_nifti(f'{outPrefix}_L{ind*2}.nii.gz', temp, affine)
+        save_nifti(f'{outPrefix}_L{ind*2}.nii.gz', temp, affine, hdr)
 
         # rishImgs[:, :, :, i]= temp
 
