@@ -1,21 +1,12 @@
 #!/usr/bin/env python
 
-import numpy as np
-from subprocess import check_call
 from plumbum.cmd import antsApplyTransforms
 from plumbum import FG
-import os, configparser
 from glob import glob
-
-import warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=FutureWarning)
-    from dipy.io.image import load_nifti, save_nifti
-    from dipy.segment.mask import applymask
-
 
 from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.ndimage.filters import gaussian_filter
+from util import *
 
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
@@ -95,7 +86,7 @@ def antsMult(caselist, outPrefix):
                            caselist]), shell= True)
 
 
-def dti_stat(siteName, imgs, masks, templatePath, templateAffine):
+def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
 
     maskData = []
     for maskPath in masks:
@@ -103,7 +94,8 @@ def dti_stat(siteName, imgs, masks, templatePath, templateAffine):
 
     morphed_mask= binary_opening(np.mean(maskData, axis= 0)>0.5, structure= generate_binary_structure(3,1))*1
     morphed_mask_name= os.path.join(templatePath, f'{siteName}_Mask.nii.gz')
-    save_nifti(morphed_mask_name, morphed_mask, templateAffine)
+    templateAffine = templateHdr.get_best_affine()
+    save_nifti(morphed_mask_name, morphed_mask.astype('uint8'), templateAffine, templateHdr)
 
     imgData= []
     for dm in diffusionMeasures:
@@ -113,15 +105,15 @@ def dti_stat(siteName, imgs, masks, templatePath, templateAffine):
             imgData.append(load_nifti(os.path.join(directory, 'dti', f'{prefix}_Warped{dm}.nii.gz'))[0])
 
         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_{dm}.nii.gz'),
-                                np.mean(imgData, axis= 0), templateAffine)
+                                np.mean(imgData, axis= 0), templateAffine, templateHdr)
 
         save_nifti(os.path.join(templatePath, f'Std_{siteName}_{dm}.nii.gz'),
-                                np.std(imgData, axis= 0), templateAffine)
+                                np.std(imgData, axis= 0), templateAffine, templateHdr)
 
     return morphed_mask_name
 
 
-def rish_stat(siteName, imgs, templatePath, templateAffine):
+def rish_stat(siteName, imgs, templatePath, templateHdr):
 
     for i in range(0, N_shm+1, 2):
         imgData= []
@@ -130,30 +122,31 @@ def rish_stat(siteName, imgs, templatePath, templateAffine):
             directory = os.path.dirname(imgPath)
             imgData.append(load_nifti(os.path.join(directory, 'harm', f'{prefix}_WarpedL{i}.nii.gz'))[0])
 
+        templateAffine= templateHdr.get_best_affine()
         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_L{i}.nii.gz'),
-                            np.mean(imgData, axis= 0), templateAffine)
+                            np.mean(imgData, axis= 0), templateAffine, templateHdr)
 
         save_nifti(os.path.join(templatePath, f'Std_{siteName}_L{i}.nii.gz'),
-                            np.std(imgData, axis= 0), templateAffine)
+                            np.std(imgData, axis= 0), templateAffine, templateHdr)
 
 
 def template_masking(refMaskPath, targetMaskPath, templatePath, siteName):
 
-    refMask, affine= load_nifti(refMaskPath)
-    targetMask, _= load_nifti(targetMaskPath)
-    templateMask= applymask(refMask, targetMask)
+    ref= load(refMaskPath)
+    target= load(targetMaskPath)
 
-    save_nifti(os.path.join(templatePath, 'templateMask.nii.gz'),
-               templateMask, affine)
+    templateMask= applymask(ref.get_data(), target.get_data())
+
+    save_nifti(os.path.join(templatePath, 'templateMask.nii.gz'), templateMask.astype('uint8'), ref.affine, ref.header)
 
     for dm in diffusionMeasures:
         fileName= os.path.join(templatePath, f'Mean_{siteName}_{dm}.nii.gz')
-        imgData, affine= load_nifti(fileName)
-        save_nifti(fileName, applymask(imgData, templateMask), affine)
+        img= load(fileName)
+        save_nifti(fileName, applymask(img.get_data(), templateMask), img.affine, img.header)
 
         fileName= os.path.join(templatePath, f'Std_{siteName}_{dm}.nii.gz')
-        imgData, affine= load_nifti(fileName)
-        save_nifti(fileName, applymask(imgData, templateMask), affine)
+        img= load(fileName)
+        save_nifti(fileName, applymask(img.get_data(), templateMask), img.affine, img.header)
 
 
     return templateMask
@@ -179,13 +172,13 @@ def stat_calc(ref, target, mask):
     np.nan_to_num(per_diff).clip(max=100., min=-100., out= per_diff)
     per_diff_smooth= smooth(per_diff)
     scale= ref/(target+eps)
-    scale.clip(max=10., min= 0., out= scale)
+    # scale.clip(max=10., min= 0., out= scale)
 
     return (delta, per_diff, per_diff_smooth, scale)
 
 
 def difference_calc(refSite, targetSite, refImgs, targetImgs,
-                    templatePath, templateAffine, subDir, mask, measures):
+                    templatePath, templateHdr, subDir, mask, measures):
 
     '''
     if traveling heads:
@@ -200,6 +193,7 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         save results
     '''
 
+    templateAffine = templateHdr.get_best_affine()
     for dm in measures:
         delta=[]
         per_diff=[]
@@ -235,16 +229,16 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
             scale.append(temp[3])
 
         save_nifti(os.path.join(templatePath, f'Delta_{dm}.nii.gz'),
-                   np.mean(delta, axis= 0), templateAffine)
+                   np.mean(delta, axis= 0), templateAffine, templateHdr)
 
         save_nifti(os.path.join(templatePath, f'PercentageDiff_{dm}.nii.gz'),
-                   np.mean(per_diff, axis= 0), templateAffine)
+                   np.mean(per_diff, axis= 0), templateAffine, templateHdr)
 
         save_nifti(os.path.join(templatePath, f'PercentageDiff_{dm}smooth.nii.gz'),
-                   np.mean(per_diff_smooth, axis= 0), templateAffine)
+                   np.mean(per_diff_smooth, axis= 0), templateAffine, templateHdr)
 
         save_nifti(os.path.join(templatePath, f'Scale_{dm}.nii.gz'),
-                   np.sqrt(np.mean(scale, axis= 0)), templateAffine)
+                   np.sqrt(np.mean(scale, axis= 0)), templateAffine, templateHdr)
 
 
 
