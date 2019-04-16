@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from util import *
+from test_util import *
 from dti import dti
 
 
