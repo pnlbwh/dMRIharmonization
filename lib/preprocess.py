@@ -38,7 +38,7 @@ def read_caselist(file):
             masks.append(temp[1])
 
 
-        return (imgs, masks)
+    return (imgs, masks)
 
 
 def dti_harm(imgPath, maskPath):
