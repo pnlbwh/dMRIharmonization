@@ -131,8 +131,8 @@ Follow the [instruction](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation)
 Now that you have installed the prerequisite software, you are ready to install the pipeline:
 
     git clone https://github.com/pnlbwh/dMRIharmonization.git && cd dMRIharmonization
-    conda create -f environmnet.yml     # you may comment out any existing package from environment.yml
-    conda activate harmonization        # should introduce '(harmonization)' in front of each line
+    conda env create -f environment.yml    # you may comment out any existing package from environment.yml
+    conda activate harmonization           # should introduce '(harmonization)' in front of each line
 
 
 Alternatively, if you already have ANTs, you can continue using your python environment by directly installing 
@@ -159,7 +159,7 @@ If any of them does not exist, add that to your path:
 
     export PATH=$PATH:/directory/of/executable
     
-`conda` should already put the ANTs scripts in your path. However, if you choose to use pre-installed ANTs scripts, 
+`conda activate harmonization` should already put the ANTs scripts in your path. However, if you choose to use pre-installed ANTs scripts, 
 you may need to define [ANTSPATH](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath)
 
 
