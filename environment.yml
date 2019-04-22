@@ -1,4 +1,4 @@
-name: dMRIharmonization
+name: harmonization
 
 channels:
     - conda-forge
