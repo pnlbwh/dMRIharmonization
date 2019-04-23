@@ -11,7 +11,7 @@ write_list()
 }
 
 # get version info
-IFS=" = ", read -r _ v < ../_version.py
+IFS=" = ", read -r _ v < ../../_version.py
 __version__=`echo $v | xargs`
 
 # download test data

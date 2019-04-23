@@ -19,12 +19,21 @@ def write_list(caselist):
 
 
 def main():
-    # append 'lib/' so _version.py is discoverable
+
     FILEDIR = abspath(dirname(__file__))
     LIBDIR = dirname(FILEDIR)
+    ROOTDIR = dirname(LIBDIR)
+    # append 'lib/' so pipeline functions are discoverable
     sys.path.append(LIBDIR)
+    # append 'dMRIharmonization/' so _version.py is discoverable
+    sys.path.append(ROOTDIR)
     # get version info
     from _version import __version__
+
+    if len(sys.argv)==1 or sys.argv[1] in ['-h', '--help']:
+        print('Usage: download_data.py dataName.zip\n'
+              f'dataName.zip is the name of the zip file in https://github.com/pnlbwh/Harmonization-Python/releases/latest')
+        return
 
     # download test data
     test_data= sys.argv[1]
