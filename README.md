@@ -468,7 +468,7 @@ In details:
 * reference data is proprocessed, and registered to reference template space and then to MNI space ([IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz))
 * unprocessed target data is directly registered to MNI space
 * harmonized target data is registered to target template space and then to MNI space
-* once the data are in MNI space, we calculate mean FA over the [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA_skeleton.nii.gz)
+* once the data are in MNI space, we calculate mean FA over the [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6897/IITmean_FA_skeleton.nii.gz)
  
 NOTE: Download the above data and place them in `IITAtlas/` directory.
 
@@ -479,7 +479,7 @@ The numbers should like like below:
     BSNIP mean FA before harmonization:  0.5072286796848892
     BSNIP mean FA after harmonization:  0.5321998242139347
 
-As we see above, BSNIP (target) mean FA over [IITmean_FA_skeleton.nii.gz](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) 
+As we see above, BSNIP (target) mean FA over [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6897/IITmean_FA_skeleton.nii.gz) 
 for all the site images after harmonization increased to be almost equal to that of CIDAR (reference) mean FA.
 
 Now there are two ways to debug:
