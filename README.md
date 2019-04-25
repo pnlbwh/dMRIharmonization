@@ -16,7 +16,6 @@ Table of Contents
       * [1. Install prerequisites](#1-install-prerequisites)
          * [Check system architecture](#check-system-architecture)
          * [Python 3](#python-3)
-         * [FSL](#fsl)
          * [unringing](#unringing)
       * [2. Install pipeline](#2-install-pipeline)
          * [3. Configure your environment](#3-configure-your-environment)
@@ -77,28 +76,32 @@ target site, it aims to remove inter-site variability.
 
 If this repository is useful in your research, please cite as below: 
 
-Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi *Multi-site Diffusion MRI Harmonization*, 
-https://github.com/pnlbwh/dMRIharmoniziation, 2019, DOI: 10.5281/zenodo.2584275
+Karayumak, S.C., Bouix, S., Ning, L., James, A., Crow, T., Shenton, M., Kubicki, M. and Rathi, Y., 2019. 
+Retrospective harmonization of multi-site diffusion MRI data acquired with different acquisition parameters. 
+Neuroimage, 184, pp.180-200.
 
 
 # Dependencies
 
-* ANTs
-* FSL
+* ANTs = 2.2.0
 * reisert/unring
-* numpy
-* scipy
-* scikit-image
-* dipy
-* nibabel
-* pynrrd
+* numpy = 1.16.2
+* scipy = 1.2.1
+* scikit-image = 0.15.0
+* dipy = 0.16.0
+* nibabel = 2.3.0
+* pynrrd = 0.3.6
+* conversion = 2.0
+
+**NOTE** The above versions were used for developing the repository. However, *dMRIharmonization* should work on 
+any advanced version. 
 
 
 # Installation
 
 ## 1. Install prerequisites
 
-Python 3, and FSL (ignore the one(s) you have already):
+You may ignore installation instruction for any software module that you have already.
 
 ### Check system architecture
 
@@ -113,11 +116,6 @@ Download [Miniconda Python 3.6 bash installer](https://docs.conda.io/en/latest/m
 Activate the conda environment:
 
     source ~/miniconda3/bin/activate # should introduce '(base)' in front of each line
-
-### FSL
-
-Follow the [instruction](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FslInstallation) to download and install FSL.
-
 
 ### unringing
 
@@ -148,7 +146,6 @@ Make sure the following executables are in your path:
     antsMultivariateTemplateConstruction2.sh
     antsApplyTransforms
     antsRegistrationSyNQuick.sh
-    dtifit
     unring.a64
     
 You can check them as follows:
@@ -159,8 +156,8 @@ If any of them does not exist, add that to your path:
 
     export PATH=$PATH:/directory/of/executable
     
-`conda activate harmonization` should already put the ANTs scripts in your path. However, if you choose to use pre-installed ANTs scripts, 
-you may need to define [ANTSPATH](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath)
+`conda activate harmonization` should already put the ANTs scripts in your path. 
+However, if you choose to use pre-installed ANTs scripts, you may need to define [ANTSPATH](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath)
 
 
 # Running
@@ -470,7 +467,7 @@ In details:
 * harmonized target data is registered to target template space and then to MNI space
 * once the data are in MNI space, we calculate mean FA over the [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6897/IITmean_FA_skeleton.nii.gz)
  
-NOTE: Download the above data and place them in `IITAtlas/` directory.
+NOTE: Download the above data from [IIT HUMAN BRAIN ATLAS](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) and place them in `IITAtlas/` directory.
 
 The numbers should like like below:
 
@@ -546,5 +543,5 @@ Zhang S, Arfanakis K. Evaluation of standardized and study-specific diffusion te
 of the adult human brain: Template characteristics, spatial normalization accuracy, and detection of small 
 inter-group FA differences. Neuroimage 2018;172:40-50.
 
-Tashrif Billah, Sylvain Bouix and Yogesh Rathi, Various MRI Conversion Tools, 
+Tashrif Billah, Sylvain Bouix, and Yogesh Rathi, Various MRI Conversion Tools, 
 https://github.com/pnlbwh/conversion, 2019, DOI: 10.5281/zenodo.2584003.
