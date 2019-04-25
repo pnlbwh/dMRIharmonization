@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 
+# ===============================================================================
+# dMRIharmonization (2018) pipeline is written by-
+#
+# TASHRIF BILLAH
+# Brigham and Women's Hospital/Harvard Medical School
+# tbillah@bwh.harvard.edu, tashrifbillah@gmail.com
+#
+# ===============================================================================
+# See details at https://github.com/pnlbwh/dMRIharmonization
+# Submit issues at https://github.com/pnlbwh/dMRIharmonization/issues
+# View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
+# ===============================================================================
+
 from skimage.transform import resize
 from scipy.ndimage import binary_opening, generate_binary_structure
 from normalize import normalize_data, find_b0

@@ -1,3 +1,16 @@
+# ===============================================================================
+# dMRIharmonization (2018) pipeline is written by-
+#
+# TASHRIF BILLAH
+# Brigham and Women's Hospital/Harvard Medical School
+# tbillah@bwh.harvard.edu, tashrifbillah@gmail.com
+#
+# ===============================================================================
+# See details at https://github.com/pnlbwh/dMRIharmonization
+# Submit issues at https://github.com/pnlbwh/dMRIharmonization/issues
+# View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
+# ===============================================================================
+
 import os, shutil, configparser, sys
 import numpy as np
 from subprocess import check_call
@@ -12,6 +25,7 @@ with warnings.catch_warnings():
     from dipy.reconst.shm import QballModel
     from dipy.reconst.odf import gfa
     from dipy.segment.mask import applymask
+    import dipy.reconst.dti as dipyDti
 
 
 def save_nifti(fname, data, affine, hdr=None):

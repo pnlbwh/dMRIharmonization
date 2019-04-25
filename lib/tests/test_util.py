@@ -1,3 +1,16 @@
+# ===============================================================================
+# dMRIharmonization (2018) pipeline is written by-
+#
+# TASHRIF BILLAH
+# Brigham and Women's Hospital/Harvard Medical School
+# tbillah@bwh.harvard.edu, tashrifbillah@gmail.com
+#
+# ===============================================================================
+# See details at https://github.com/pnlbwh/dMRIharmonization
+# Submit issues at https://github.com/pnlbwh/dMRIharmonization/issues
+# View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
+# ===============================================================================
+
 from os.path import abspath, dirname, basename, exists, join as pjoin, isfile, split as psplit
 from os import mkdir
 import sys

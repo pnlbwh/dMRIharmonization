@@ -1,3 +1,16 @@
+# ===============================================================================
+# dMRIharmonization (2018) pipeline is written by-
+#
+# TASHRIF BILLAH
+# Brigham and Women's Hospital/Harvard Medical School
+# tbillah@bwh.harvard.edu, tashrifbillah@gmail.com
+#
+# ===============================================================================
+# See details at https://github.com/pnlbwh/dMRIharmonization
+# Submit issues at https://github.com/pnlbwh/dMRIharmonization/issues
+# View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
+# ===============================================================================
+
 from skimage.measure import label, regionprops
 from scipy.ndimage import binary_erosion, binary_dilation, generate_binary_structure, iterate_structure
 
@@ -187,6 +200,3 @@ def stack_b0(b0s_mask, dwi, b0):
             j+=1
 
     return np.moveaxis(np.array(S_hat_final), 0, -1)
-
-if __name__ =='__main__':
-    pass
