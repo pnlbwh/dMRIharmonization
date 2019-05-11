@@ -29,7 +29,11 @@ __version__=`echo $v | xargs`
 
 # download test data
 test_data=connectom_prisma # change this value if test data name is changed
-wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
+if [ ! -f ${test_data}.zip ]
+then
+    wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
+fi
+
 tar -xzvf ${test_data}.zip
 
 cd ${test_data}
@@ -53,3 +57,4 @@ write_list prisma.txt
 --nshm 4 \
 --nproc -1 \
 --create --process --debug
+
