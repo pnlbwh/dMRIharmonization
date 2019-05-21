@@ -9,6 +9,7 @@ dependencies:
     - ipython
     - numpy
     - nibabel
+    - pandas
     - dipy
     - scipy
     - scikit-image
