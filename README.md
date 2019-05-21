@@ -7,7 +7,7 @@
 
 Table of Contents
 =================
-
+    
    * [Table of Contents](#table-of-contents)
    * [Multi-site dMRI harmonization](#multi-site-dmri-harmonization)
    * [Citation](#citation)
@@ -18,7 +18,8 @@ Table of Contents
          * [Python 3](#python-3)
          * [unringing](#unringing)
       * [2. Install pipeline](#2-install-pipeline)
-         * [3. Configure your environment](#3-configure-your-environment)
+      * [3. Download IIT templates](#3-download-iit-templates)
+      * [4. Configure your environment](#4-configure-your-environment)
    * [Running](#running)
    * [Tests](#tests)
       * [1. pipeline](#1-pipeline)
@@ -45,8 +46,12 @@ Table of Contents
       * [2. Use seperately](#2-use-seperately)
       * [3. With a list of FA images](#3-with-a-list-of-fa-images)
    * [Travel heads](#travel-heads)
-   * [Caveats](#caveats)
+   * [Caveats/Issues](#caveatsissues)
+      * [1. Template path](#1-template-path)
+      * [2. Multi-processing](#2-multi-processing)
+      * [3. Tracker](#3-tracker)
    * [Reference](#reference)
+
 
 
 Table of Contents created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
@@ -74,17 +79,31 @@ target site, it aims to remove inter-site variability.
 
 # Citation
 
-If this repository is useful in your research, please cite as below: 
+If this repository is useful in your research, please cite all of the following: 
 
-Karayumak, S.C., Bouix, S., Ning, L., James, A., Crow, T., Shenton, M., Kubicki, M. and Rathi, Y., 2019. 
-Retrospective harmonization of multi-site diffusion MRI data acquired with different acquisition parameters. 
-Neuroimage, 184, pp.180-200.
+* Billah T*, Cetin Karayumak S*, Bouix S, Rathi Y. Multi-site Diffusion MRI Harmonization, 
+https://github.com/pnlbwh/dMRIharmoniziation, 2019, DOI: 10.5281/zenodo.2584275
+
+    \* *denotes equal first authroship*
+
+
+* Cetin Karayumak S, Bouix S, Ning L, James A, Crow T, Shenton M, Kubicki M, Rathi Y. Retrospective harmonization of multi-site diffusion MRI data 
+acquired with different acquisition parameters. Neuroimage. 2019 Jan 1;184:180-200. 
+doi: 10.1016/j.neuroimage.2018.08.073. Epub 2018 Sep 8. PubMed PMID: 30205206; PubMed Central PMCID: PMC6230479.
+
+
+* Mirzaalian H, Ning L, Savadjiev P, Pasternak O, Bouix S, Michailovich O, Karmacharya S, Grant G, Marx CE, Morey RA, Flashman LA, George MS, 
+McAllister TW, Andaluz N, Shutter L, Coimbra R, Zafonte RD, Coleman MJ, Kubicki M, Westin CF, Stein MB, Shenton ME, Rathi Y. 
+Multi-site harmonization of diffusion MRI data in a registration framework. Brain Imaging Behav. 2018 Feb;12(1):284-295. 
+doi:10.1007/s11682-016-9670-y. PubMed PMID: 28176263.
+
 
 
 # Dependencies
 
 * ANTs = 2.2.0
 * reisert/unring
+* FSL = 5.0.11
 * numpy = 1.16.2
 * scipy = 1.2.1
 * scikit-image = 0.15.0
@@ -139,7 +158,17 @@ the prerequisite libraries:
     pip install -r requirements.txt --upgrade
 
 
-### 3. Configure your environment
+## 3. Download IIT templates
+
+dMRIharmonization toolbox is provided with a debugging capability to test how good has been the 
+harmonization. For debug to work and **tests** to run, download the following data from [IIT HUMAN BRAIN ATLAS](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) 
+and place them in `IITAtlas/` directory:
+
+* [IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz) 
+* [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6897/IITmean_FA_skeleton.nii.gz)
+
+
+## 4. Configure your environment
 
 Make sure the following executables are in your path:
 
@@ -156,8 +185,11 @@ If any of them does not exist, add that to your path:
 
     export PATH=$PATH:/directory/of/executable
     
-`conda activate harmonization` should already put the ANTs scripts in your path. 
-However, if you choose to use pre-installed ANTs scripts, you may need to define [ANTSPATH](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath)
+`conda activate harmonization` should already put the ANTs scripts in your path. Yet, you should set ANTSPATH as follows:
+    
+    export ANTSPATH=~/miniconda3/envs/harmonization/bin/
+
+However, if you choose to use pre-installed ANTs scripts, you can define ANTSPATH according to [this](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Linux-and-Mac-OS#set-path-and-antspath) instruction.
 
 
 # Running
@@ -289,6 +321,7 @@ multiple threads to speed-up template construction.
 However, multi-threading comes with a price of slowing down other processes that may be running in your system. So, it 
 is advisable to leave out at least two cores for other processes to run smoothly.
 
+**NOTE** See [Caveats/Issues](#caveatsissues) that may occur while using many processors in parallel.
 
 # Order of spherical harmonics
 
@@ -527,21 +560,31 @@ For example, scanning same set of people in Brigham and Women's Hospital and
 Massachusetts General Hospital. Therefore, users should set `--travelHeads` 
 if they have same set of subjects across sites.
 
-# Caveats
+
+# Caveats/Issues
+
+## 1. Template path
 
 `antsMultivariateTemplateConstruction2.sh`: all the images need to have unique
 prefix because transform files are created in the same `--template ./template/` directory. The value of `--template` 
 should have `/` at the end. The pipeline appends one if there is not, but it is good to include it when specifying.
 
-# Reference
+## 2. Multi-processing
 
-Karayumak, S.C., Bouix, S., Ning, L., James, A., Crow, T., Shenton, M., Kubicki, M. and Rathi, Y., 2019. 
-Retrospective harmonization of multi-site diffusion MRI data acquired with different acquisition parameters. 
-Neuroimage, 184, pp.180-200.
+[Multi threading](#-multi-threading) requires memory and processor availability. If pipeline does not continue past 
+`unringing` or `shm_coeff` computation, your machine likely ran out of memory. Reducing `--nproc` to lower number of processors (i.e. 1-4) 
+or swithcing to a powerful machine should help in this regard.
+
+## 3. Tracker
+
+In any case, feel free to submit an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues). We shall get back to you as soon as possible.
+
+# Reference
 
 Zhang S, Arfanakis K. Evaluation of standardized and study-specific diffusion tensor imaging templates 
 of the adult human brain: Template characteristics, spatial normalization accuracy, and detection of small 
 inter-group FA differences. Neuroimage 2018;172:40-50.
 
-Tashrif Billah, Sylvain Bouix, and Yogesh Rathi, Various MRI Conversion Tools, 
+Billah, Tashrif; Bouix, Sylvain; Rathi, Yogesh; Various MRI Conversion Tools, 
 https://github.com/pnlbwh/conversion, 2019, DOI: 10.5281/zenodo.2584003.
+
