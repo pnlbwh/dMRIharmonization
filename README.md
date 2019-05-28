@@ -394,11 +394,11 @@ submodules of the harmonization pipeline during executation. A sample `config.in
 
 # Template
 
-Template directory is passed by `--template` arguments. It is primarily used by `antsMultivariateTemplateConstruction2.sh` 
+Template directory is provided with `--template` argument. This directory is primarily used by `antsMultivariateTemplateConstruction2.sh` 
 to save transform files. Then, various scales maps (*Scale_\*.nii.gz*) and mean templates (*Mean_\*.nii.gz*) 
 are created in this directory. There are other template files: 
 *Delta_\*.nii.gz*, *PercentageDiff_\*.nii.gz*, and *PercentageDiff_\*smooth.nii.gz*. You may look at them to know how good 
-has been the created template.
+are the created templates.
     
 # List of outputs
 
@@ -432,7 +432,7 @@ Finally, there are other files:
       
 # Template creation
     
-RISH features are diffusion measures are computed from all the input images. Images of two modalites: 
+RISH features and diffusion measures are computed from all the input images. Images of two modalites: 
 *FA* and *L0* (RISH order 0) are provided as input to `antsMultivariateTemplateConstruction2.sh`. A `template0.nii.gz` is 
 created. Afterwards, various scales maps (*Scale_\*.nii.gz*) and mean templates (*Mean_\*.nii.gz*) 
 are created in `--template` directory. See [Reference](#referece) for details on the template construction method 
@@ -452,7 +452,8 @@ and [Template](#Template) for list of outputs. A sample template construction co
 
 Note: Replace each of the above paths with absolute path as needed.
 
-During template construction, you want to provide a **small list of images** to `--ref_list` and `--tar_list`. However, 
+During template construction, you want to provide a **small list of images** to `--ref_list` and `--tar_list`. 
+[Section 2.4](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6230479/) of our paper gives a concise analysis about the number of samples to be chosen for template creation. The paper posits 20 as the "Gold Standard" for template creation while 16 as the minimum number. The rule of thumb should be to choose 16-20 subjects matched across sites for age, gender and IQ. However, 
 provide a **complete list of images** you want to harmonize to `--tar_list` during [data harmonization](#data-harmonization)
 
 
