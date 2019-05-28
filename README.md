@@ -82,7 +82,7 @@ target site, it aims to remove inter-site variability.
 If this repository is useful in your research, please cite all of the following: 
 
 * Billah T*, Cetin Karayumak S*, Bouix S, Rathi Y. Multi-site Diffusion MRI Harmonization, 
-https://github.com/pnlbwh/dMRIharmoniziation, 2019, DOI: 10.5281/zenodo.2584275
+https://github.com/pnlbwh/dMRIharmoniziation, 2019, doi: 10.5281/zenodo.2584275
 
     \* *denotes equal first authroship*
 
