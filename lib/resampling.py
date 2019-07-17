@@ -15,39 +15,93 @@
 
 from skimage.transform import resize
 from scipy.ndimage import binary_opening, generate_binary_structure
+from scipy.io import loadmat, savemat
 from normalize import normalize_data, find_b0
 from util import *
+from os import remove
+
+def resize_spm(lowResImg, inPrefix):
+
+    dataFile= inPrefix + '_data.mat'
+    savemat(dataFile, {'lowResImg': lowResImg})
+
+    # call MATLAB_Runtime based spm bspline interpolation
+    check_call([f'spm_bspline_exec {inPrefix}'], shell= True)
+
+    highResImg= np.nan_to_num(loadmat(inPrefix+'_resampled.mat')['highResImg'])
+
+    return highResImg
+
 
 def save_high_res(fileName, sp_high, lowResImgHdr, highResImg):
 
     imgHdrOut = lowResImgHdr.copy()
-    sp_low= imgHdrOut['pixdim'][1:4]
-    imgHdrOut['pixdim'][1:4] = sp_high
+    sp_low= lowResImgHdr['pixdim'][1:4].copy()
+
     imgHdrOut['dim'][1:4] = highResImg.shape[:3]
     scale= np.diag((sp_high/sp_low).tolist()+[1.])
     imgHdrOut.set_sform(imgHdrOut.get_sform() @ scale)
     imgHdrOut.set_qform(imgHdrOut.get_qform() @ scale)
+    imgHdrOut['pixdim'][1:4] = sp_high
     save_nifti(fileName, highResImg, affine= imgHdrOut.get_best_affine(), hdr=imgHdrOut)
 
 
-def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals):
+def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals,
+               interp_toolbox='spm'):
 
     # order for b spline interpolation
-    sOrder= 5
+    sOrder= np.float64(7)
 
-    # resample the dwi ----------------------------------------------------------------
     where_b0 = np.where(bvals == 0)[0]
     lowResImgPrime, b0= normalize_data(lowResImg, mask= lowResMask, where_b0= where_b0)
     lowResImg= applymask(lowResImgPrime, b0)
 
     sp_low= lowResImgHdr['pixdim'][1:4]
-    step = sp_low/sp_high
-    sx, sy, sz = [int(round(x)) for x in lowResImg.shape[:3]*step]
 
-    highResImg= np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
-    for i in np.where(bvals != 0)[0]:
-        print('Resampling gradient ', i)
-        highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'constant')
+    spatial_factor = sp_low / sp_high
+    sx, sy, sz = [int(round(x)) for x in lowResImg.shape[:3] * spatial_factor]
+
+    if interp_toolbox=='scipy':
+
+        # resample the dwi ----------------------------------------------------------------
+        highResImg= np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
+        for i in np.where(bvals != 0)[0]:
+            print('Resampling gradient ', i)
+            highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'constant')
+
+        # resample the b0 -----------------------------------------------------------------
+        b0HighRes = resize(b0, (sx, sy, sz), order=sOrder, mode='constant')
+
+    elif interp_toolbox=='spm':
+        step = sp_high / sp_low
+        # num= [int(np.floor(x)) for x in (lowResImg.shape[:3] + step + 0.01 - 1 + 1) / step]
+
+        [x,y,z]= np.meshgrid([np.linspace(1, lowResImg.shape[0]+ step[0] + 0.01, sx, dtype= 'float64')],
+                             [np.linspace(1, lowResImg.shape[1]+ step[1] + 0.01, sy, dtype= 'float64')],
+                             [np.linspace(1, lowResImg.shape[2]+ step[2] + 0.01, sz, dtype= 'float64')])
+
+        inPrefix= lowResImgPath.split('.')[0]
+        # save grids
+        savemat(inPrefix+'_grid.mat', {'x':x,'y':y, 'z':z, 'sOrder':sOrder})
+
+        # resample the dwi ----------------------------------------------------------------
+        highResImg = np.zeros((x.shape[0], x.shape[1], x.shape[2], lowResImg.shape[3]), dtype='float')
+
+        for i in np.where(bvals != 0)[0]:
+            print('Resampling gradient ', i)
+            highResImg[:,:,:,i]= resize_spm(lowResImg[:,:,:,i], inPrefix)
+
+        # resample the b0 -----------------------------------------------------------------
+        b0HighRes = resize_spm(b0, inPrefix)
+
+
+        # clean up the mat files
+        remove(inPrefix+'_grid.mat')
+        remove(inPrefix+'_data.mat')
+        remove(inPrefix+'_resampled.mat')
+
+    else:
+        raise ValueError('Undefined interp_toolbox')
 
     # resample the mask ---------------------------------------------------------------
     highResMaskPath = lowResMaskPath.split('.')[0] + '_resampled.nii.gz'
@@ -58,7 +112,6 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
     # resample the b0 ----------------------------------------------------------------
     highResB0PathTmp= lowResImgPath.split('.')[0] + '_resampled_bse_tmp.nii.gz'
-    b0HighRes= resize(b0, (sx, sy, sz), order= sOrder, mode= 'constant')
     np.nan_to_num(b0HighRes).clip(min= 0., out= b0HighRes) # using min= 1. is unnecessary
     save_high_res(highResB0PathTmp, sp_high, lowResMaskHdr, b0HighRes)
 
@@ -94,5 +147,31 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
 
 if __name__=='__main__':
+    from conversion import read_imgs_masks
+    from dipy.io import read_bvals_bvecs
+    imgs, masks= read_imgs_masks('/home/tb571/Downloads/Harmonization-Python/BSNIP_Baltimore/ref_caselist.txt')
+    import multiprocessing
+
+    # pool= multiprocessing.Pool(32)
+    for lowResImgPath, lowResMaskPath in zip(imgs,masks):
+        img= load(lowResImgPath)
+        lowResImg= img.get_data()
+        lowResImgHdr= img.header
+
+        img= load(lowResMaskPath)
+        lowResMask= img.get_data()
+        lowResMaskHdr= img.header
+
+        sp_high= np.array([1.5,1.5,1.5])
+
+        bvals, _ = read_bvals_bvecs(lowResImgPath.split('.')[0] + '.bval', None)
+
+        resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals)
+
+        # pool.apply_async(func= resampling,
+        #                  args=(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals))
+
+    # pool.close()
+    # pool.join()
     pass
 
