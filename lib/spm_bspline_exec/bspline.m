@@ -4,15 +4,23 @@ function []= bspline(inPrefix)
     dataFile= [inPrefix '_data.mat'];
     load(dataFile);
 
-    % load x,y,z, s0rder
-    gridFile= [inPrefix '_grid.mat'];
+    % load sp_low, sp_high, s0rder, size
+    gridFile= [inPrefix '_sp.mat'];
     load(gridFile);
+
+    step = double(sp_high ./ sp_low);
+    imgDim = double(imgDim);
+    sOrder = double(sOrder);
+
+    [x,y,z]=ndgrid(1:step(1):(imgDim(1)+step(1)+0.01), ...
+                   1:step(2):(imgDim(2)+step(2)+0.01), ...
+                   1:step(3):(imgDim(3)+step(3)+0.01));
 
     v1=spm_bsplinc(double(lowResImg),[sOrder sOrder sOrder 0 0 0]);
     highResImg = single(spm_bsplins(v1,x,y,z,[sOrder sOrder sOrder 0 0 0]));
 
     % save highResImg
-    save([inPrefix '_resampled2.mat'], 'highResImg');
+    save([inPrefix '_resampled.mat'], 'highResImg');
 
 
 end
