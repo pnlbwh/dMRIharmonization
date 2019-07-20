@@ -13,27 +13,44 @@
 
 from util import *
 
-def dti(imgPath, maskPath, inPrefix, outPrefix):
+def dti(imgPath, maskPath, inPrefix, outPrefix, tool='FSL'):
 
-    print('dipy dtifit ', imgPath)
-
-    vol= load(imgPath)
-    mask= load(maskPath)
-    bvals, bvecs= read_bvals_bvecs(inPrefix + '.bval', inPrefix + '.bvec')
+    vol = load(imgPath)
+    mask = load(maskPath)
     masked_vol = applymask(vol.get_data(), mask.get_data())
 
-    gtab= gradient_table(bvals, bvecs)
-    dtimodel= dipyDti.TensorModel(gtab, fit_method="LS")
-    dtifit= dtimodel.fit(masked_vol)
-    fa= dtifit.fa
-    md= dtifit.md
+    if tool=='DIPY':
+        print('dipy dtifit ', imgPath)
 
-    save_nifti(outPrefix + '_FA.nii.gz', fa, vol.affine, vol.header)
-    save_nifti(outPrefix + '_MD.nii.gz', md, vol.affine, vol.header)
+        bvals, bvecs = read_bvals_bvecs(inPrefix + '.bval', inPrefix + '.bvec')
 
-    gfa_vol= gfa(masked_vol)
-    save_nifti(outPrefix+'_GFA.nii.gz', gfa_vol, vol.affine, vol.header)
+        gtab= gradient_table(bvals, bvecs)
+        dtimodel= dipyDti.TensorModel(gtab, fit_method="LS")
+        dtifit= dtimodel.fit(masked_vol)
+        fa= dtifit.fa
+        md= dtifit.md
+
+        save_nifti(outPrefix + '_FA.nii.gz', fa, vol.affine, vol.header)
+        save_nifti(outPrefix + '_MD.nii.gz', md, vol.affine, vol.header)
+
+
+    elif tool=='FSL':
+        from plumbum.cmd import dtifit
+        from plumbum import FG
+
+        print('fsl dtifit ', imgPath)
+        dtifit['-k', imgPath,
+               '-m', maskPath,
+               '-r', inPrefix + '.bvec',
+               '-b', inPrefix + '.bval',
+               '-o', outPrefix
+              ] & FG
+
+
+    gfa_vol = gfa(masked_vol)
+    save_nifti(outPrefix + '_GFA.nii.gz', gfa_vol, vol.affine, vol.header)
 
 
 if __name__ == '__main__':
     pass
+
