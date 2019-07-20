@@ -29,14 +29,17 @@ def normalize_data(dwi, where_b0= None, mask= None, b0= None):
 
     if where_b0 is not None and b0 is None:
         b0= find_b0(dwi, where_b0, mask)
-        np.nan_to_num(b0).clip(min=1., out=b0)
+        # np.nan_to_num(b0).clip(min=1., out=b0)
+        b0= np.nan_to_num(b0)
         for i in where_b0:
             dwi[...,i] = b0
     else:
-        np.nan_to_num(b0).clip(min=1., out=b0)
+        # np.nan_to_num(b0).clip(min=1., out=b0)
+        b0= np.nan_to_num(b0)
 
 
-    dwiPrime= dwi/b0[...,None]
+    # dwiPrime= dwi/b0[...,None]
+    dwiPrime= dwi/b0[...,None].clip(min=1.)
     np.nan_to_num(dwiPrime).clip(min=0., max=1., out= dwiPrime)
 
     if mask is not None:
