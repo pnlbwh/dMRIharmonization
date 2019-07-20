@@ -23,8 +23,10 @@ import numpy as np
 import sys
 
 np.set_printoptions(precision=5)
-# BINS= [-np.inf, -10, -5, -1, 0, 1, 5, 10, np.inf]
-BINS= [0, 1, 5, 10, np.inf]
+# BINS= [0, 1, 5, 10, np.inf]
+# BINS= [0, 1, 10, 50, 100]
+# BINS= [0, 5, 10, 50, np.inf]
+BINS= [0, 5, 10, 50, 100]
 
 def hist_calc(a, bins):
 
@@ -68,31 +70,32 @@ def bval_bvec_difference(imgPath_given_mat, imgPath_given_py, caselist):
         bvecs_py = np.array(read_bvecs(imgPath_py.split('.')[0] + '.bvec'))
 
         bvals_py, bvecs_py = stack_one_b0(bvals_py, bvecs= bvecs_py)
+        bvals_py= bvals_py.astype('float64')
+        bvecs_py= bvecs_py.astype('float64')
 
 
         # load matlab
         bvals_mat = np.array(read_bvals(imgPath_mat.split('.')[0] + '.bval'))
         bvecs_mat = np.array(read_bvecs(imgPath_mat.split('.')[0] + '.bvec'))
+        bvals_mat= bvals_mat.astype('float64')
+        bvecs_mat= bvecs_mat.astype('float64')
 
         # obtain case wise difference for bvals
-        diff = abs(bvals_py.astype('float64') - bvals_mat.astype('float64'))
+        diff = 2*abs(bvals_py - bvals_mat)/ (bvals_py+bvals_mat) * 100
         bval_diff_list.append(diff.flatten())
-        bval_total_diff.append(diff.sum())
         bval_mean_diff.append(diff.mean())
 
         # obtain case wise difference
-        diff = abs(bvecs_py.astype('float64') - bvecs_mat.astype('float64'))
+        diff = 2*abs(bvecs_py - bvecs_mat)/ (bvals_py+bvals_mat) * 100
         bvec_diff_list.append(diff.flatten())
-        bvec_total_diff.append(diff.sum())
         bvec_mean_diff.append(diff.mean())
 
-    print(f'Mean of total difference over all the bvals: {np.mean(bval_total_diff)}')
-    print(f'Mean of mean difference over all the bvals: {np.mean(bval_mean_diff)}')
+
+    print(f'Mean of mean relative percentage difference over all the bvals: {np.mean(bval_mean_diff)}')
     hist_calc(bval_diff_list, bins= BINS)
     print('\n\n')
 
-    print(f'Mean of total difference over all the bvecs: {np.mean(bvec_total_diff)}')
-    print(f'Mean of mean difference over all the bvecs: {np.mean(bvec_mean_diff)}')
+    print(f'Mean of mean relative percentage difference over all the bvecs: {np.mean(bvec_mean_diff)}')
     hist_calc(bvec_diff_list, bins= BINS)
     print('\n\n')
 
@@ -110,23 +113,24 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
         imgPath_mat = imgPath_given_mat.replace('XYZ', case)
         imgPath_py = imgPath_given_py.replace('XYZ', case)
 
-
         # load python
-        img_py = nib.load(imgPath_py).get_data()
-        hdr= img_py.header
+        img_py_obj = nib.load(imgPath_py)
+        hdr= img_py_obj.header
+        img_py= img_py_obj.get_data()
         # keep only the first b0
         bvals = np.array(read_bvals(imgPath_py.split('.')[0] + '.bval'))
         img_py= stack_one_b0(bvals, dwi= img_py)
+        img_py= img_py.astype('float64')
 
         pyX, pyY, pyZ, _ = img_py.shape
 
         # load matlab
         img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ,: ]
+        img_mat= img_mat.astype('float64')
 
         # obtain case wise difference
-        diff = abs(img_py.astype('float64') - img_mat.astype('float64'))
+        diff = 2*abs(img_py - img_mat) / (img_py + img_mat).clip(min=1.) * 100
         diff_list.append(diff.flatten())
-        total_diff.append(diff.sum())
         mean_diff.append(diff.mean())
 
         # save the difference mask
@@ -134,9 +138,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
         nib.Nifti1Image(diff, affine, hdr).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
 
 
-
-    print(f'Mean of total difference over all the voxels: {np.mean(total_diff)}')
-    print(f'Mean of mean difference over all the voxels: {np.mean(mean_diff)}')
+    print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
     hist_calc(diff_list, bins= BINS)
 
 
@@ -173,19 +175,19 @@ def dti_diff(imgPath_given_mat, imgPath_given_py, caselist):
 
         # load python
         img_py = nib.load(imgPath_py).get_data()
+        img_py= img_py.astype('float64')
         pyX, pyY, pyZ = img_py.shape
 
         # load matlab
         img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ]
+        img_mat= img_mat.astype('float64')
 
         # obtain case wise difference
-        diff = abs(img_py.astype('float64') - img_mat.astype('float64'))
+        diff = 2*abs(img_py - img_mat) / (img_py+img_mat).clip(min=1.) * 100
         diff_list.append(diff.flatten())
-        total_diff.append(diff.sum())
         mean_diff.append(diff.mean())
 
-    print(f'Mean of total difference over all the voxels: {np.mean(total_diff)}')
-    print(f'Mean of mean difference over all the voxels: {np.mean(mean_diff)}')
+    print(f'Mean of mean relative percentage difference: {np.mean(mean_diff)}')
     hist_calc(diff_list, bins= BINS)
     print('\n\n')
 
@@ -207,20 +209,20 @@ def rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6):
 
             # load python
             img_py = nib.load(imgPath_py).get_data()
+            img_py= img_py.astype('float64')
             pyX, pyY, pyZ = img_py.shape
 
             # load matlab
             img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ]
+            img_mat= img_mat.astype('float64')
 
             # obtain case wise difference
-            diff = abs(img_py.astype('float64') - img_mat.astype('float64'))
+            diff = 2*abs(img_py - img_mat) / (img_py+img_mat).clip(min=1.) * 100
             diff_list.append(diff.flatten())
-            total_diff.append(diff.sum())
             mean_diff.append(diff.mean())
 
         print(f'Feature: L{i}: ')
-        print(f'Mean of total difference over all the voxels: {np.mean(total_diff)}')
-        print(f'Mean of mean difference over all the voxels: {np.mean(mean_diff)}')
+        print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
         hist_calc(diff_list, bins= BINS)
         print('\n\n')
 
@@ -239,20 +241,20 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
 
         # load python
         img_py = nib.load(imgPath_py).get_data()
+        img_py= img_py.astype('float64')
         pyX, pyY, pyZ = img_py.shape
 
         # load matlab
         img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ]
+        img_mat= img_mat.astype('float64')
 
         # obtain case wise difference
-        diff = abs(img_py.astype('float64') - img_mat.astype('float64'))
+        diff = 2*abs(img_py - img_mat) / (img_py+img_mat).clip(min=1.) * 100
         diff_list.append(diff.flatten())
-        total_diff.append(diff.sum())
         mean_diff.append(diff.mean())
 
         print(f'Feature: L{i}: ')
-        print(f'Mean of total difference over all the voxels: {np.mean(total_diff)}')
-        print(f'Mean of mean difference over all the voxels: {np.mean(mean_diff)}')
+        print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
         hist_calc(diff_list, bins= BINS)
         print('\n\n')
 
@@ -262,156 +264,68 @@ def main():
         print(
 '''
 This module is the gateway for testing equivalence between MATALAB and PYTHON harmonization results. 
-Edit 'compute_volumwise_diff.py' the module for computing volumewise difference over all cases in a site.
+Edit 'compute_volumwise_diff.py' for computing volumewise difference over all cases in a site.
 Specify a sample path in 'imgPath_py' and 'imgPath_mat' using *XYZ* for case, *ORDER* for shm order in sample path.
 The program will replace *XYZ* with caseid obtained from provided caselist. It will also substitute *ORDER* with
-proper spherical harmonic order upto N_shm given to
-rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6) and
-scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6)
+proper spherical harmonic order upto N_shm which is provided as argument to:
+rish_diff(imgPath_mat, imgPath_py, caselist, N_shm= 6) and
+scale_diff(imgPath_mat, imgPath_py, N_shm= 6)
 '''
             )
         exit()
 
-    case_file = '.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caselist.txt'
+    case_file = '/path/to/caselist.txt'
     with open(case_file) as f:
         content= f.read()
     caselist= content.split()
 
-
-
-    print('#### BSNIP_Baltimore, reference site: CIDAR-post #### \n\n')
+    print('\n\n #### CONNECTOM site #### \n\n')
 
     print('========================================================================================')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/XYZ-dwi-Ed-centered_bMapped.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/XYZ-dwi-Ed-centered_bMapped.nii.gz'
-    print('After bvalue mapping, volume difference')
+    print('After bvalue mapping and resampling, volume difference')
+    imgPath_py='/path/to/dMRIharmonization/lib/tests/connectom_prisma/connectom/' \
+               'XYZ/dwi_XYZ_connectom_st_b1200_resampled.nii.gz'
+    imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/connectom/' \
+                'XYZ/rish/dwi_XYZ_connectom_st_b1200_bMapped_Resampled.nii.gz'
     dwi_difference(imgPath_mat, imgPath_py, caselist)
-
     print('========================================================================================')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/XYZ-dwi-Ed-centered_resampled.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/XYZ-dwi-Ed-centered_Resampled.nii.gz'
-    print('After resampling, volume difference')
-    dwi_difference(imgPath_mat, imgPath_py, caselist)
 
-    print('========================================================================================')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/XYZ-dwi-Ed-centered_resampled.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/rish/XYZ-dwi-Ed-centered_bMapped_Resampled.nii.gz'
-    print('After preprocessing, volume difference')
-    dwi_difference(imgPath_mat, imgPath_py, caselist)
 
     print('========================================================================================')
     print('After preprocessing, bval/bvec difference')
+    # imgPath_mat and imgPath_py are nifti image paths from which bval/bvec paths are understood
     bval_bvec_difference(imgPath_mat, imgPath_py, caselist)
+    print('========================================================================================')
+
 
     print('========================================================================================')
-    print('After preprocessing, mask difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/Tensor_mask-XYZ-dwi-filt-Ed_AvGradient-cleaned_resampled.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/rish/Tensor_mask-XYZ-dwi-filt-Ed_AvGradient-cleaned_Resampled.nii.gz'
+    print('rish difference')
+    imgPath_py='/path/to/dMRIharmonization/lib/tests/connectom_prisma/connectom/' \
+               'XYZ/harm/dwi_XYZ_connectom_st_b1200_resampled_LORDER.nii.gz'
+    imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/connectom/' \
+                'XYZ/rish/rish/dwi_XYZ_connectom_st_b1200_bMapped_Resampled_LORDER.nii.gz'
+    rish_diff(imgPath_mat, imgPath_py, caselist, N_shm= 4)
+    print('========================================================================================')
+
+
+    print('========================================================================================')
+    print('dti difference')
+    imgPath_py='/path/to/dMRIharmonization/lib/tests/connectom_prisma/connectom/' \
+               'XYZ/dti/dwi_XYZ_connectom_st_b1200_resampled_FA.nii.gz'
+    imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/connectom/' \
+                'XYZ/dti/dwi_XYZ_connectom_st_b1200_bMapped_Resampled_FA.nii.gz'
     dti_diff(imgPath_mat, imgPath_py, caselist)
-
     print('========================================================================================')
-    print('After preprocessing, Rish difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/harm/XYZ-dwi-Ed-centered_resampled_LORDER.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/rish/rish/XYZ-dwi-Ed-centered_bMapped_Resampled_LORDER.nii.gz'
-    rish_diff(imgPath_mat, imgPath_py, caselist)
-
-    print('========================================================================================')
-    print('After preprocessing, DTI difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/dti/XYZ-dwi-Ed-centered_resampled_FA.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/' \
-                'caseXYZ/dti/XYZ-dwi-Ed-centered_bMapped_Resampled_FA.nii.gz'
-    dti_diff(imgPath_mat, imgPath_py, caselist)
-
-    # ========================================================================================================================
 
 
-    print('#### Template for BSNIP and CIDAR #### \n')
+    print('#### Template for CONNECTOM and PRISMA #### \n')
 
     print('========================================================================================')
     print('After template creation, rish scale map difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/template/Scale_LORDER.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/template/Scale_LORDER.nii.gz'
+    imgPath_py='/path/to/dMRIharmonization/lib/tests/connectom_prisma/template/Scale_LORDER.nii.gz'
+    imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/template/Scale_LORDER.nii.gz'
     scale_diff(imgPath_mat, imgPath_py)
-
-
-    # ========================================================================================================================
-
-    case_file = '.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'caselist.txt'
-    with open(case_file) as f:
-        content= f.read()
-    caselist= content.split()
-
-    print('#### BSNIP_Baltimore, target site: BSNIP #### \n')
-
     print('========================================================================================')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/XYZ_dwi_xc_Ed_resampled.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/rish/XYZ_dwi_xc_Ed_Resampled.nii.gz'
-    print('After preprocessing, before harmonization, volume difference')
-    dwi_difference(imgPath_mat, imgPath_py, caselist)
-
-    print('========================================================================================')
-    print('After preprocessing, before harmonization, bval/bvec difference')
-    bval_bvec_difference(imgPath_mat, imgPath_py, caselist)
-
-    print('========================================================================================')
-    print('After preprocessing, before harmonization mask difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/XYZ_dwi_xc_Ed_OTSUtensormask_cleaned_resampled.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/rish/XYZ_dwi_xc_Ed_OTSUtensormask_cleaned_Resampled.nii.gz'
-    dti_diff(imgPath_mat, imgPath_py, caselist)
-
-    print('========================================================================================')
-    print('After preprocessing, before harmonization, rish difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/harm/XYZ_dwi_xc_Ed_resampled_LORDER.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/rish/rish/XYZ_dwi_xc_Ed_Resampled_LORDER.nii.gz'
-    rish_diff(imgPath_mat, imgPath_py, caselist)
-
-    print('========================================================================================')
-    print('After preprocessing, before harmonization, DTI difference')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/dti/XYZ_dwi_xc_Ed_resampled_FA.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/dti/XYZ_dwi_xc_Ed_Resampled_FA.nii.gz'
-    dti_diff(imgPath_mat, imgPath_py, caselist)
-
-
-    print('========================================================================================')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/harmonized_XYZ_dwi_xc_Ed_resampled.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/rish/harmonized_XYZ_dwi_xc_Ed_Resampled.nii.gz'
-    print('After harmonization, volume difference \n')
-    dwi_difference(imgPath_mat, imgPath_py, caselist,
-                   '.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/CIDAR-post/diff_mask_reconst.nii.gz')
-    print('After harmonization, bval/bvec difference \n')
-    bval_bvec_difference(imgPath_mat, imgPath_py, caselist)
-
-    print('========================================================================================')
-    print('After harmonization, mask difference: ')
-    imgPath_py='.../Harmonization-Python/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/harmonized_XYZ_dwi_xc_Ed_resampled_mask.nii.gz'
-    imgPath_mat='.../Harmonization-Python/compare_matlab/BSNIP_Baltimore/BSNIP_Balt_trainingHC/' \
-                'XYZ/rish/harmonized_XYZ_dwi_xc_Ed_OTSUtensormask_cleaned_Resampled.nii.gz'
-    dti_diff(imgPath_mat, imgPath_py, caselist)
-
 
 
 if __name__=='__main__':
