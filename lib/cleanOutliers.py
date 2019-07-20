@@ -36,13 +36,15 @@ def antsReg(img, mask, mov, outPrefix):
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
-                               '-o', outPrefix]), shell= True)
+                               '-o', outPrefix,
+                               '-e', '123456']), shell= True)
     else:
         check_call((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
-                               '-o', outPrefix]), shell= True)
+                               '-o', outPrefix,
+                               '-e', '123456']), shell= True)
 
 def antsApply(templatePath, directory, prefix):
 
