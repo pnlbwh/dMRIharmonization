@@ -193,7 +193,7 @@ the prerequisite libraries:
 
 dMRIharmonization toolbox is provided with a debugging capability to test how good has been the 
 harmonization. For debug to work and **tests** to run, download the following data from [IIT HUMAN BRAIN ATLAS](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) 
-and place them in `IITAtlas/` directory:
+and place them in `dMRIharmonization/IITAtlas/` directory:
 
 * [IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz) 
 * [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6897/IITmean_FA_skeleton.nii.gz)
