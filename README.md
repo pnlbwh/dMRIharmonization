@@ -4,10 +4,9 @@
 
 *dMRIharmonization* repository is developed by Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi, Brigham and Women's Hospital (Harvard Medical School).
 
-
 Table of Contents
 =================
-    
+
    * [Table of Contents](#table-of-contents)
    * [Multi-site dMRI harmonization](#multi-site-dmri-harmonization)
    * [Citation](#citation)
@@ -16,6 +15,7 @@ Table of Contents
       * [1. Install prerequisites](#1-install-prerequisites)
          * [Check system architecture](#check-system-architecture)
          * [Python 3](#python-3)
+         * [MATLAB Runtime Compiler](#matlab-runtime-compiler)
          * [unringing](#unringing)
       * [2. Install pipeline](#2-install-pipeline)
       * [3. Download IIT templates](#3-download-iit-templates)
@@ -51,7 +51,6 @@ Table of Contents
       * [2. Multi-processing](#2-multi-processing)
       * [3. Tracker](#3-tracker)
    * [Reference](#reference)
-
 
 
 Table of Contents created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
@@ -136,13 +135,45 @@ Activate the conda environment:
 
     source ~/miniconda3/bin/activate # should introduce '(base)' in front of each line
 
+    
+### MATLAB Runtime Compiler
+
+In the harmonization process, all volumes have to be resampled to a common spatial resolution. 
+We have chosen bspline as the interpolation method. For better result, bspline order has been chosen to be 7. 
+Since Python and ANTs provide bspline order less than or equal to 5, we have resorted to [spm package](https://github.com/spm/spm12) for this task.
+Using their source codes [bspline.c](https://github.com/spm/spm12/blob/master/src/spm_bsplinc.c) and [bsplins.c](https://github.com/spm/spm12/blob/master/src/spm_bsplins.c), 
+we have made a standalone executable that performs the above interpolation. Execution of the standalone executable 
+requires [MATLAB Runtime Compiler](https://www.mathworks.com/products/compiler/matlab-runtime.html). It is available free of charge.
+Download a suitable version from the above, and install as follows:
+
+    unzip MCR_R2017a_glnxa64_installer.zip -d MCR_R2017a_glnxa64/
+    MCR_R2017a_glnxa64/install -mode silent -agreeToLicense yes -destinationFolder `pwd`/MATLAB_Runtime
+    
+
+See details about installation [here](https://www.mathworks.com/help/compiler/install-the-matlab-runtime.html).
+
+After successful installation, you should see a suggestion about editing your LD_LIBRARY_PATH. 
+You should save the suggestion in a file `env.sh`.
+
+    echo "/path/to/v92/runtime/glnxa64:/path/to/v92/bin/glnxa64:/path/to/v92/sys/os/glnxa64:/path/to/v92/opengl/lib/glnxa64:" > env.sh
+
+Then, every time you run dMRIharmonization, you can just source the `env.sh` for your LD_LIBRARY_PATH to be updated.
+    
+    
 ### unringing
 
     git clone https://bitbucket.org/reisert/unring.git
     cd unring/fsl
     export PATH=$PATH:`pwd`
-    unring --help
 
+You should be able to see the help message now:
+
+    unring.a64 --help
+
+
+**NOTE** FSL unringing executable requires Centos7 operating system.
+    
+    
 ## 2. Install pipeline
 
 Now that you have installed the prerequisite software, you are ready to install the pipeline:
