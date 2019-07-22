@@ -189,6 +189,12 @@ the prerequisite libraries:
     pip install -r requirements.txt --upgrade
 
 
+**NOTE** If other people will run *dMRIharmonization* in your lab, it may be useful to change permission of the configuration file:
+
+    chmod +w dMRIharmonization/lib/config.ini
+
+
+
 ## 3. Download IIT templates
 
 dMRIharmonization toolbox is provided with a debugging capability to test how good has been the 
