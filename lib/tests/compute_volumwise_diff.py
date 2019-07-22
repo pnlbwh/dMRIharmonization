@@ -115,7 +115,6 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
 
         # load python
         img_py_obj = nib.load(imgPath_py)
-        hdr= img_py_obj.header
         img_py= img_py_obj.get_data()
         # keep only the first b0
         bvals = np.array(read_bvals(imgPath_py.split('.')[0] + '.bval'))
@@ -134,8 +133,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
         mean_diff.append(diff.mean())
 
         # save the difference mask
-        affine = nib.load(imgPath_py).affine
-        nib.Nifti1Image(diff, affine, hdr).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
+        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
 
 
     print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
@@ -174,7 +172,8 @@ def dti_diff(imgPath_given_mat, imgPath_given_py, caselist):
         imgPath_py = imgPath_given_py.replace('XYZ', case)
 
         # load python
-        img_py = nib.load(imgPath_py).get_data()
+        img_py_obj = nib.load(imgPath_py)
+        img_py = img_py_obj.get_data()
         img_py= img_py.astype('float64')
         pyX, pyY, pyZ = img_py.shape
 
@@ -186,6 +185,9 @@ def dti_diff(imgPath_given_mat, imgPath_given_py, caselist):
         diff = 2*abs(img_py - img_mat) / (img_py+img_mat).clip(min=1.) * 100
         diff_list.append(diff.flatten())
         mean_diff.append(diff.mean())
+
+        # save the difference mask
+        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0] + '_diff_mask.nii.gz')
 
     print(f'Mean of mean relative percentage difference: {np.mean(mean_diff)}')
     hist_calc(diff_list, bins= BINS)
@@ -208,7 +210,8 @@ def rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6):
             imgPath_py = imgPath_py.replace('XYZ', case)
 
             # load python
-            img_py = nib.load(imgPath_py).get_data()
+            img_py_obj = nib.load(imgPath_py)
+            img_py= img_py_obj.get_data()
             img_py= img_py.astype('float64')
             pyX, pyY, pyZ = img_py.shape
 
@@ -220,6 +223,10 @@ def rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6):
             diff = 2*abs(img_py - img_mat) / (img_py+img_mat).clip(min=1.) * 100
             diff_list.append(diff.flatten())
             mean_diff.append(diff.mean())
+
+            # save the difference mask
+            affine = nib.load(imgPath_py).affine
+            nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0] + '_diff_mask.nii.gz')
 
         print(f'Feature: L{i}: ')
         print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
@@ -240,7 +247,8 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
         mean_diff= []
 
         # load python
-        img_py = nib.load(imgPath_py).get_data()
+        img_py_obj = nib.load(imgPath_py)
+        img_py = img_py_obj.get_data()
         img_py= img_py.astype('float64')
         pyX, pyY, pyZ = img_py.shape
 
@@ -253,6 +261,10 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
         diff_list.append(diff.flatten())
         mean_diff.append(diff.mean())
 
+        # save the difference mask
+        affine = nib.load(imgPath_py).affine
+        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
+
         print(f'Feature: L{i}: ')
         print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
         hist_calc(diff_list, bins= BINS)
@@ -260,19 +272,29 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
 
 
 def main():
-    if sys.argv[1]=='-h' or sys.argv[1]=='--help':
-        print(
+
+    # default shm order
+    N_shm= 4
+
+    if len(sys.argv)==2:
+        if sys.argv[1]=='-h' or sys.argv[1]=='--help':
+            print(
 '''
 This module is the gateway for testing equivalence between MATALAB and PYTHON harmonization results. 
 Edit 'compute_volumwise_diff.py' for computing volumewise difference over all cases in a site.
-Specify a sample path in 'imgPath_py' and 'imgPath_mat' using *XYZ* for case, *ORDER* for shm order in sample path.
-The program will replace *XYZ* with caseid obtained from provided caselist. It will also substitute *ORDER* with
-proper spherical harmonic order upto N_shm which is provided as argument to:
-rish_diff(imgPath_mat, imgPath_py, caselist, N_shm= 6) and
-scale_diff(imgPath_mat, imgPath_py, N_shm= 6)
+Specify a sample path in 'imgPath_py' and 'imgPath_mat'. Use XYZ for caseid, ORDER for shm order in the sample paths.
+The program will replace XYZ with caseids obtained from provided caselist. It will also substitute ORDER with
+even shm order <= N_shm which is used to compute Rish and Scale differences for each shm.
+Sample usage:
+./compute_volumewise_diff.py -h   # print this usage
+./compute_volumewise_diff.py 6    # N_shm=6 for Scale/Rish differences
+./compute_volumeise_diff.py       # no need to specify shm order for DWI/Template/DTI differences
 '''
-            )
-        exit()
+                )
+            exit()
+
+        else:
+            N_shm=int(sys.argv[1])
 
     case_file = '/path/to/caselist.txt'
     with open(case_file) as f:
@@ -304,7 +326,7 @@ scale_diff(imgPath_mat, imgPath_py, N_shm= 6)
                'XYZ/harm/dwi_XYZ_connectom_st_b1200_resampled_LORDER.nii.gz'
     imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/connectom/' \
                 'XYZ/rish/rish/dwi_XYZ_connectom_st_b1200_bMapped_Resampled_LORDER.nii.gz'
-    rish_diff(imgPath_mat, imgPath_py, caselist, N_shm= 4)
+    rish_diff(imgPath_mat, imgPath_py, caselist, N_shm)
     print('========================================================================================')
 
 
@@ -315,16 +337,6 @@ scale_diff(imgPath_mat, imgPath_py, N_shm= 6)
     imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/connectom/' \
                 'XYZ/dti/dwi_XYZ_connectom_st_b1200_bMapped_Resampled_FA.nii.gz'
     dti_diff(imgPath_mat, imgPath_py, caselist)
-    print('========================================================================================')
-
-
-    print('#### Template for CONNECTOM and PRISMA #### \n')
-
-    print('========================================================================================')
-    print('After template creation, rish scale map difference')
-    imgPath_py='/path/to/dMRIharmonization/lib/tests/connectom_prisma/template/Scale_LORDER.nii.gz'
-    imgPath_mat='/path/to/dMRIharmonization/compare_matlab/connectom_prisma/template/Scale_LORDER.nii.gz'
-    scale_diff(imgPath_mat, imgPath_py)
     print('========================================================================================')
 
 
