@@ -49,7 +49,8 @@ Table of Contents
    * [Caveats/Issues](#caveatsissues)
       * [1. Template path](#1-template-path)
       * [2. Multi-processing](#2-multi-processing)
-      * [3. Tracker](#3-tracker)
+      * [3. X forwarding error](#3-x-forwarding-error)
+      * [4. Tracker](#4-tracker)
    * [Reference](#reference)
 
 
@@ -158,8 +159,8 @@ You should save the suggestion in a file `env.sh`.
     echo "/path/to/v92/runtime/glnxa64:/path/to/v92/bin/glnxa64:/path/to/v92/sys/os/glnxa64:/path/to/v92/opengl/lib/glnxa64:" > env.sh
 
 Then, every time you run dMRIharmonization, you can just source the `env.sh` for your LD_LIBRARY_PATH to be updated.
-    
-    
+
+
 ### unringing
 
     git clone https://bitbucket.org/reisert/unring.git
@@ -613,7 +614,28 @@ should have `/` at the end. The pipeline appends one if there is not, but it is 
 `unringing` or `shm_coeff` computation, your machine likely ran out of memory. Reducing `--nproc` to lower number of processors (i.e. 1-4) 
 or swithcing to a powerful machine should help in this regard.
 
-## 3. Tracker
+
+## 3. X forwarding error
+
+Standalone MATLAB executable `bspline` used for resampling in the pipeline, requires X forwarding to be properly set. 
+If it is not properly set, you may notice error like below:
+    
+    X11 proxy: unable to connect to forwarded X server: Network error: Connection refused
+    
+Either of the following should fix that:
+    
+    ssh -X user@remotehost
+
+or
+    
+    ssh user@remotehost
+    unset DISPLAY
+    
+When using the latter option, be mindful that it may cause other programs requiring `$DISPLAY` 
+in that particular terminal to malfunction.
+    
+
+## 4. Tracker
 
 In any case, feel free to submit an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues). We shall get back to you as soon as possible.
 
