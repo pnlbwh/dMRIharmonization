@@ -22,7 +22,8 @@ from util import *
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-config.read(os.path.join(SCRIPTDIR,'config.ini'))
+# config.read(os.path.join(SCRIPTDIR,'config.ini'))
+config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures= [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
@@ -187,7 +188,7 @@ def stat_calc(ref, target, mask):
 
 
 def difference_calc(refSite, targetSite, refImgs, targetImgs,
-                    templatePath, templateHdr, subDir, mask, measures):
+                    templatePath, templateHdr, mask, measures):
 
     '''
     if traveling heads:
@@ -211,12 +212,10 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         if travelHeads:
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
-                directory = os.path.dirname(refImg)
-                ref= load_nifti(os.path.join(directory, subDir, f'{prefix}_Warped{dm}.nii.gz'))[0]
+                ref= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
 
                 prefix = os.path.basename(targetImg).split('.')[0]
-                directory = os.path.dirname(targetImg)
-                target= load_nifti(os.path.join(directory, subDir, f'{prefix}_Warped{dm}.nii.gz'))[0]
+                target= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
 
                 temp= stat_calc(ref, target, mask)
                 delta.append(temp[0])

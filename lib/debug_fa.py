@@ -23,11 +23,12 @@ ROOTDIR= os.path.abspath(os.path.join(SCRIPTDIR, '..'))
 mniTmp = os.path.join(ROOTDIR, 'IITAtlas', 'IITmean_FA.nii.gz')
 
 config = configparser.ConfigParser()
-config.read(os.path.join(SCRIPTDIR,'config.ini'))
+# config.read(os.path.join(SCRIPTDIR,'config.ini'))
+config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
 
-def register_reference(imgPath, warp2mni, trans2mni):
+def register_reference(imgPath, warp2mni, trans2mni, templatePath):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
@@ -36,11 +37,11 @@ def register_reference(imgPath, warp2mni, trans2mni):
 
     for dm in diffusionMeasures:
 
-        output = os.path.join(directory, 'dti', prefix + f'_InMNI_{dm}.nii.gz')
+        output = os.path.join(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
 
         # reference site have been already warped to reference template space in buildTemplate.py: warp_bands()
         # warped data are os.path.join(directory, 'dti', prefix + f'_WarpedFA.nii.gz')
-        moving = os.path.join(directory, 'dti', prefix + f'_Warped{dm}.nii.gz')
+        moving = os.path.join(templatePath, prefix + f'_Warped{dm}.nii.gz')
 
         # so warp diffusion measure to MNI space directly
         antsApplyTransforms[
@@ -52,7 +53,7 @@ def register_reference(imgPath, warp2mni, trans2mni):
         ] & FG
 
 
-def register_target(imgPath):
+def register_target(imgPath, templatePath):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
@@ -61,7 +62,7 @@ def register_target(imgPath):
 
     dmImg = os.path.join(directory, 'dti', prefix + f'_FA.nii.gz')
 
-    outPrefix = os.path.join(directory, 'dti', prefix + '_FA_ToMNI_')
+    outPrefix = os.path.join(templatePath, prefix + '_FA_ToMNI_')
     warp2mni = outPrefix + '1Warp.nii.gz'
     trans2mni = outPrefix + '0GenericAffine.mat'
     # unprocessed target data is given, so in case multiple debug is needed, pass the registration
@@ -69,7 +70,7 @@ def register_target(imgPath):
         antsReg(mniTmp, None, dmImg, outPrefix)
 
     for dm in diffusionMeasures:
-        output = os.path.join(directory, 'dti', prefix + f'_InMNI_{dm}.nii.gz')
+        output = os.path.join(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
 
         moving = os.path.join(directory, 'dti', prefix + f'_{dm}.nii.gz')
         # warp diffusion measure to template space first, then to MNI space
@@ -100,7 +101,7 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
     antsReg(dmTmp, maskTmp, dmImg, outPrefix)
 
     for dm in diffusionMeasures:
-        output = os.path.join(directory, 'dti', prefix + f'_InMNI_{dm}.nii.gz')
+        output = os.path.join(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
 
         moving = os.path.join(directory, 'dti', prefix + f'_{dm}.nii.gz')
         # warp diffusion measure to template space first, then to MNI space
@@ -132,9 +133,9 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
     for imgPath in imgs:
 
         if ref:
-            pool.apply_async(func= register_reference, args= (imgPath, warp2mni, trans2mni, ))
+            pool.apply_async(func= register_reference, args= (imgPath, warp2mni, trans2mni, templatePath, ))
         elif tar_unproc:
-            pool.apply_async(func= register_target, args= (imgPath, ))
+            pool.apply_async(func= register_target, args= (imgPath, templatePath, ))
         elif tar_harm:
             pool.apply_async(func= register_harmonized, args= (imgPath, warp2mni, trans2mni, templatePath, siteName, ))
 
@@ -142,7 +143,7 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
     pool.join()
 
 
-def analyzeStat(file):
+def analyzeStat(file, templatePath):
     '''
     :param file: list of (FA or MD or GFA) that are already in MNI space
     :return: mean of the images
@@ -155,11 +156,10 @@ def analyzeStat(file):
 
     meanAttr=[]
     for imgPath in imgs:
-        directory = os.path.dirname(imgPath)
         inPrefix = imgPath.split('.')[0]
         prefix = os.path.split(inPrefix)[-1]
 
-        faImg= os.path.join(directory, 'dti', prefix + f'_InMNI_FA.nii.gz')
+        faImg= os.path.join(templatePath, prefix + f'_InMNI_FA.nii.gz')
         data= load(faImg).get_data()
         temp= data*skel_mask
         meanAttr.append(temp[temp>0].mean())

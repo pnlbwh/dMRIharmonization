@@ -242,11 +242,11 @@ class pipeline(cli.Application):
 
         print('calculating scale map for diffusionMeasures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
-                        'dti', templateMask, self.diffusionMeasures)
+                        templateMask, self.diffusionMeasures)
 
         print('calculating scale map for rishFeatures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
-                        'harm', templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)])
+                        templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)])
 
 
         print('\n\nTemplate creation completed \n\n')
@@ -323,15 +323,15 @@ class pipeline(cli.Application):
 
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
-        ref_mean = analyzeStat(self.ref_csv)
+        ref_mean = analyzeStat(self.ref_csv, self.templatePath)
 
         print('\n\n Target site before harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.tar_unproc_csv, tar_unproc= True)
-        target_mean_before = analyzeStat(self.tar_unproc_csv)
+        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)
 
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
-        target_mean_after = analyzeStat(self.harm_csv)
+        target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
 
         print('\n\nPrinting statistics :')
         print(f'{self.reference} mean FA: ', np.mean(ref_mean))
@@ -376,7 +376,9 @@ class pipeline(cli.Application):
         else:
             self.tar_unproc_csv= str(self.target_csv)
 
-        with open(os.path.join(SCRIPTDIR,'config.ini'),'w') as f:
+        # copy provided config file to temporary directory
+        configFile= f'/tmp/harm_config_{os.getpid()}.ini'
+        with open(configFile,'w') as f:
             f.write('[DEFAULT]\n')
             f.write(f'N_shm = {self.N_shm}\n')
             f.write(f'N_proc = {self.N_proc}\n')
@@ -399,6 +401,9 @@ class pipeline(cli.Application):
 
         if self.debug:
             self.post_debug()
+
+
+        os.remove(configFile)
 
 
 if __name__ == '__main__':
