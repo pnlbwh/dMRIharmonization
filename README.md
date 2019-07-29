@@ -563,7 +563,7 @@ If you would like to debug at a later time, you need to specify three images lis
 * `--tar_list`: use the unprocessed target list **without** the `.modified` extension
 * `--harm_list`: use the harmonized target list that has `.harmonized` extension
 
-    lib/harmonization.py --ref_list ref.txt.modified --tar_list target.csv --harm_list target.csv.modified.harmonized
+    `lib/harmonization.py --ref_list ref.txt.modified --tar_list target.csv --harm_list target.csv.modified.harmonized`
 
 NOTE: You should run the pipeline first before debugging separately because `--debug` makes use of files created 
 in the pipeline.
