@@ -142,7 +142,7 @@ def analyzeStat(faImgs):
 def main():
 
     parser = argparse.ArgumentParser(description='''Warps diffusion measures (FA, MD, GFA) to template space 
-    and then to subject space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz''')
+    and then to MNI space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz''')
     parser.add_argument('-i', '--input', type=str, required=True, help='input list of FA images')
     parser.add_argument('-s', '--site', type= str, required=True,
                         help='site name for locating template FA and mask in tempalte directory')
@@ -167,3 +167,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
