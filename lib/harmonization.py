@@ -273,6 +273,8 @@ class pipeline(cli.Application):
             imgs, masks= read_caselist(self.tar_unproc_csv)
             pool = multiprocessing.Pool(self.N_proc)
             for imgPath, maskPath in zip(imgs, masks):
+                imgPath= convertedPath(imgPath)
+                maskPath= convertedPath(maskPath)
                 pool.apply_async(func= dti_harm, args= ((imgPath, maskPath, )))
 
             pool.close()

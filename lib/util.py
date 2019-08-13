@@ -37,3 +37,11 @@ def save_nifti(fname, data, affine, hdr=None):
     result_img = Nifti1Image(data, affine, header=hdr)
     result_img.to_filename(fname)
 
+
+def convertedPath(imgPath):
+
+    if imgPath.endswith('.nhdr') or imgPath.endswith('.nrrd'):
+        imgPath = imgPath.split('.')[0] + '.nii.gz'
+
+    return imgPath
+
