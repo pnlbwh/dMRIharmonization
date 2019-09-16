@@ -101,7 +101,8 @@ def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
 
     maskData = []
     for maskPath in masks:
-        maskData.append(load_nifti(maskPath.split('.')[0]+ 'Warped.nii.gz')[0])
+        maskData.append(load_nifti(pjoin(templatePath, abspath(maskPath).split('.')[0] + 'Warped.nii.gz'))[0])
+
 
     morphed_mask= binary_opening(np.mean(maskData, axis= 0)>0.5, structure= generate_binary_structure(3,1))*1
     morphed_mask_name= os.path.join(templatePath, f'{siteName}_Mask.nii.gz')
