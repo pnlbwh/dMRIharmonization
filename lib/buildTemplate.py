@@ -40,7 +40,6 @@ def applyXform(inImg, refImg, warp, trans, outImg):
         ] & FG
 
 
-# def warp_bands(dtiPath, rishPath, maskPath, templatePath, N_shm, diffusionMeasures):
 def warp_bands(imgPath, maskPath, templatePath):
 
     prefix= os.path.basename(imgPath).split('.')[0]
@@ -52,7 +51,7 @@ def warp_bands(imgPath, maskPath, templatePath):
     applyXform(maskPath,
                os.path.join(templatePath, 'template0.nii.gz'),
                warp, trans,
-               maskPath.split('.')[0]+ 'Warped.nii.gz')
+               os.path.join(templatePath, os.path.abspath(maskPath).split('.')[0]+ 'Warped.nii.gz'))
 
 
     # warping the rish features
