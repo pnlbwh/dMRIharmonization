@@ -254,7 +254,7 @@ class pipeline(cli.Application):
 
     def harmonizeData(self):
 
-        from cleanOutliers import reconst
+        from reconstSignal import reconst
         from preprocess import read_caselist, dti_harm
 
         # check the templatePath
@@ -280,7 +280,7 @@ class pipeline(cli.Application):
             pool.close()
             pool.join()
 
-        # cleanOutliers steps ------------------------------------------------------------------------------------------
+        # reconstSignal steps ------------------------------------------------------------------------------------------
 
         # read target image list
         moving= os.path.join(self.templatePath, f'Mean_{self.target}_FA.nii.gz')

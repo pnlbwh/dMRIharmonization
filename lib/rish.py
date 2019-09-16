@@ -28,7 +28,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
         print('Computing shm_coeff of ', imgPath)
         bvals, bvecs = read_bvals_bvecs(inPrefix+'.bval', inPrefix+'.bvec')
 
-        # make bvals and bvecs full sampled to encounter reconstruction error in cleanOutliers.py
+        # make bvals and bvecs full sampled to encounter reconstruction error in reconstSignal.py
         bvals= np.append(bvals, bvals)
         bvecs= np.append(bvecs, -bvecs, axis= 0)
         data= np.append(data, data, axis=3)

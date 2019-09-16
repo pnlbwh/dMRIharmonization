@@ -14,7 +14,7 @@
 from plumbum.cmd import antsApplyTransforms
 from plumbum import FG
 from preprocess import read_caselist
-from cleanOutliers import antsReg
+from reconstSignal import antsReg
 import multiprocessing
 from util import *
 
