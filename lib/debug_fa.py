@@ -23,7 +23,6 @@ ROOTDIR= os.path.abspath(os.path.join(SCRIPTDIR, '..'))
 mniTmp = os.path.join(ROOTDIR, 'IITAtlas', 'IITmean_FA.nii.gz')
 
 config = configparser.ConfigParser()
-# config.read(os.path.join(SCRIPTDIR,'config.ini'))
 config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
@@ -93,7 +92,7 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
     dmImg = os.path.join(directory, 'dti', prefix + f'_FA.nii.gz')
     dmTmp = os.path.join(templatePath, f'Mean_{siteName}_FA.nii.gz')
     maskTmp = os.path.join(templatePath, f'{siteName}_Mask.nii.gz')
-    outPrefix = os.path.join(directory, 'dti', prefix + '_FA')
+    outPrefix = os.path.join(templatePath, prefix + '_FA_ToMNI')
     warp2tmp = outPrefix + '1Warp.nii.gz'
     trans2tmp = outPrefix + '0GenericAffine.mat'
     # signal reconstruction might change with zero padding size, median filtering kernel size, and harmonized mask
