@@ -226,7 +226,7 @@ class pipeline(cli.Application):
         if not self.templatePath.endswith('/'):
             self.templatePath= self.templatePath+ '/'
         # ATTN: antsMultivariateTemplateConstruction2.sh requires absolute path for caselist
-        # antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
+        antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
 
         # # load templateHdr
         templateHdr= load(os.path.join(self.templatePath, 'template0.nii.gz')).header
