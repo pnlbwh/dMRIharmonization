@@ -16,34 +16,28 @@
 from plumbum.cmd import antsApplyTransforms
 from plumbum import FG
 import multiprocessing
-from numpy import mean
+import numpy as np
 from test_util import *
-import configparser, argparse
+import argparse
+from conversion import read_imgs
 
 ROOTDIR= abspath(pjoin(LIBDIR, '..'))
 mniTmp = pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA.nii.gz')
 
-config = configparser.ConfigParser()
-config.read(pjoin(LIBDIR,'config.ini'))
-N_proc = int(config['DEFAULT']['N_proc'])
-diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
+diffusionMeasures = ['MD', 'FA', 'GFA']
 
-def read_caselist(file):
 
-    with open(file) as f:
+def printStat(ref_mean, imgs):
 
-        imgs = []
-        content= f.read()
-        for line, row in enumerate(content.split()):
-            temp= [element for element in row.split(',') if element] # handling w/space
+    print('mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: ')
+    for i, imgPath in enumerate(imgs):
+        print(basename(imgPath), ref_mean[i])
 
-            for img in temp:
-                if not isfile(img):
-                    raise FileNotFoundError(f'{img} does not exist: check line {line} in {file}')
+    print('')
+    print('mean meanFA: ', np.mean(ref_mean))
+    print('std meanFA: ', np.std(ref_mean))
+    print('')
 
-            imgs.append(temp[0])
-
-    return imgs
 
 def antsReg(img, mask, mov, outPrefix, n_thread=1):
 
@@ -68,7 +62,7 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = dirname(imgPath)
-    outPrefix = imgPath.split('.')[0] # should have _FA a the end
+    outPrefix = pjoin(templatePath, imgPath.split('.')[0]) # should have _FA a the end
     prefix = psplit(outPrefix)[-1].replace('_FA', '')
 
     dmTmp = pjoin(templatePath, f'Mean_{siteName}_FA.nii.gz')
@@ -93,7 +87,7 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
 
     return pjoin(directory, prefix + f'_InMNI_FA.nii.gz')
 
-def sub2tmp2mni(templatePath, siteName, faImgs):
+def sub2tmp2mni(templatePath, siteName, faImgs, N_proc):
 
     # obtain the transform
     moving = pjoin(templatePath, f'Mean_{siteName}_FA.nii.gz')
@@ -148,21 +142,24 @@ def main():
                         help='site name for locating template FA and mask in tempalte directory')
     parser.add_argument('-t', '--template', type=str, required=True,
                         help='template directory where Mean_{site}_FA.nii.gz and {site}_Mask.nii.gz is located')
+    parser.add_argument('--ncpu', help='number of cpus to use', default= '4')
 
     args = parser.parse_args()
-    caselist=args.input
+    imgList=args.input
     siteName=args.site
     templatePath=args.template
+    N_proc= int(args.ncpu)
 
     # read FA image list
-    faImgs= read_caselist(caselist)
+    faImgs= read_imgs(imgList)
 
     # register and obtain *_InMNI_FA.nii.gz
-    mniFAimgs= sub2tmp2mni(templatePath, siteName, faImgs)
+    mniFAimgs= sub2tmp2mni(templatePath, siteName, faImgs, N_proc)
 
     # pass *_InMNI_FA.nii.gz list to analyzeStat
     site_means= analyzeStat(mniFAimgs)
-    print(f'{siteName} mean FA: ', mean(site_means))
+    print(f'{siteName} site: ')
+    printStat(site_means, mniFAimgs)
 
 
 if __name__ == '__main__':
