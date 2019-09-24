@@ -16,8 +16,11 @@
 from plumbum import cli
 from distutils.spawn import find_executable
 import multiprocessing, psutil
+from conversion import read_imgs_masks
 
 from util import *
+
+from determineNshm import verifyNshmForAll, verifySingleShellNess, verifyNshm, determineNshm
 
 N_CPU= psutil.cpu_count()
 SCRIPTDIR= os.path.dirname(__file__)
@@ -47,6 +50,18 @@ def check_csv(file, force):
 
                     dirCheckFlag= 0
 
+
+def printStat(ref_mean, csvFile):
+
+    print('mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: ')
+    imgs, _ = read_imgs_masks(csvFile)
+    for i, imgPath in enumerate(imgs):
+        print(os.path.basename(imgPath), ref_mean[i])
+
+    print('')
+    print('mean meanFA: ', np.mean(ref_mean))
+    print('std meanFA: ', np.std(ref_mean))
+    print('')
 
 def check_dir(path, force):
     if os.path.exists(path) and force:
@@ -104,7 +119,7 @@ class pipeline(cli.Application):
     N_shm = cli.SwitchAttr(
         ['--nshm'],
         help='spherical harmonic order',
-        default= 6)
+        default= -1)
 
     N_proc = cli.SwitchAttr(
         '--nproc',
@@ -174,7 +189,7 @@ class pipeline(cli.Application):
 
         from buildTemplate import difference_calc, antsMult, warp_bands, \
             dti_stat, rish_stat, template_masking, createAntsCaselist
-        from preprocess import read_caselist, common_processing
+        from preprocess import common_processing
 
         # check directory existence
         check_dir(self.templatePath, self.force)
@@ -190,13 +205,13 @@ class pipeline(cli.Application):
         if not self.ref_csv.endswith('.modified'):
             self.ref_csv += '.modified'
         # debug: use the following line to omit processing again
-        # refImgs, refMasks = read_caselist(self.ref_csv)
+        # refImgs, refMasks = read_imgs_masks(self.ref_csv)
 
         targetImgs, targetMasks= common_processing(self.target_csv)
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
         # debug: use the following line to omit processing again
-        # targetImgs, targetMasks = read_caselist(self.target_csv)
+        # targetImgs, targetMasks = read_imgs_masks(self.target_csv)
 
         imgs= refImgs+targetImgs
         masks= refMasks+targetMasks
@@ -211,7 +226,7 @@ class pipeline(cli.Application):
         if not self.templatePath.endswith('/'):
             self.templatePath= self.templatePath+ '/'
         # ATTN: antsMultivariateTemplateConstruction2.sh requires absolute path for caselist
-        antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
+        # antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
 
         # # load templateHdr
         templateHdr= load(os.path.join(self.templatePath, 'template0.nii.gz')).header
@@ -255,7 +270,7 @@ class pipeline(cli.Application):
     def harmonizeData(self):
 
         from reconstSignal import reconst
-        from preprocess import read_caselist, dti_harm
+        from preprocess import dti_harm
 
         # check the templatePath
         if not os.path.exists(self.templatePath):
@@ -270,7 +285,7 @@ class pipeline(cli.Application):
         if self.debug:
             # calcuate diffusion measures of target site before any processing so we are able to compare
             # with the ones after harmonization
-            imgs, masks= read_caselist(self.tar_unproc_csv)
+            imgs, masks= read_imgs_masks(self.tar_unproc_csv)
             pool = multiprocessing.Pool(self.N_proc)
             for imgPath, maskPath in zip(imgs, masks):
                 imgPath= convertedPath(imgPath)
@@ -284,7 +299,7 @@ class pipeline(cli.Application):
 
         # read target image list
         moving= os.path.join(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
-        imgs, masks= read_caselist(self.target_csv)
+        imgs, masks= read_imgs_masks(self.target_csv)
 
         preFlag= 1 # omit preprocessing of target data again
         if self.target_csv.endswith('.modified'):
@@ -323,6 +338,9 @@ class pipeline(cli.Application):
 
         from debug_fa import sub2tmp2mni, analyzeStat
 
+        refImgs, _ = read_imgs_masks(self.ref_csv)
+        targetImgs, _= read_imgs_masks(self.target_csv)
+
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
         ref_mean = analyzeStat(self.ref_csv, self.templatePath)
@@ -335,10 +353,14 @@ class pipeline(cli.Application):
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
         target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
 
-        print('\n\nPrinting statistics :')
-        print(f'{self.reference} mean FA: ', np.mean(ref_mean))
-        print(f'{self.target} mean FA before harmonization: ', np.mean(target_mean_before))
-        print(f'{self.target} mean FA after harmonization: ', np.mean(target_mean_after))
+        print('\n\nPrinting statistics :\n\n')
+
+        print(f'{self.reference} site: ')
+        printStat(ref_mean, self.ref_csv)
+        print(f'{self.target} site before harmonization: ')
+        printStat(target_mean_before, self.tar_unproc_csv)
+        print(f'{self.target} site after harmonization: ')
+        printStat(target_mean_after, self.harm_csv)
 
 
     def sanityCheck(self):
@@ -368,6 +390,7 @@ class pipeline(cli.Application):
 
     def main(self):
 
+        self.templatePath= os.path.abspath(self.templatePath)
         self.N_shm= int(self.N_shm)
         self.N_proc= int(self.N_proc)
         if self.N_proc==-1:
@@ -377,6 +400,43 @@ class pipeline(cli.Application):
             self.tar_unproc_csv= str(self.target_csv).split('.modified')[0]
         else:
             self.tar_unproc_csv= str(self.target_csv)
+
+
+        # check appropriateness of N_shm
+        if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
+            raise ValueError('2<= --nshm <=8')
+
+
+
+        # determine N_shm in default mode during template creation
+        if self.N_shm==-1 and self.create:
+            if self.ref_csv:
+                ref_nshm_img = read_imgs_masks(self.ref_csv)[0][0]
+            elif self.target_csv:
+                ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
+
+            directory= os.path.dirname(ref_nshm_img)
+            prefix= os.path.basename(ref_nshm_img).split('.')[0]
+            bvalFile= os.path.join(directory, prefix+'.bval')
+            self.N_shm, _= determineNshm(bvalFile)
+
+
+        # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
+        # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
+        elif self.N_shm==-1 and self.process:
+            for i in range(0,8,2):
+                if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}_b{self.bshell_b}.nii.gz')):
+                    self.N_shm= i
+                else:
+                    break
+
+
+        # verify validity of provided/determined N_shm for all subjects
+        # single-shell-ness is verified inside verifyNshmForAll
+        if self.ref_csv:
+            verifyNshmForAll(self.ref_csv, self.N_shm)
+        if self.target_csv:
+            verifyNshmForAll(self.target_csv, self.N_shm)
 
         # copy provided config file to temporary directory
         configFile= f'/tmp/harm_config_{os.getpid()}.ini'
@@ -401,7 +461,7 @@ class pipeline(cli.Application):
         if self.process:
             self.harmonizeData()
 
-        if self.debug:
+        if self.create and self.process and self.debug:
             self.post_debug()
 
 
