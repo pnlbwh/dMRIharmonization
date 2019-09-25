@@ -84,7 +84,7 @@ def createAntsCaselist(imgs, file):
 
 def antsMult(caselist, outPrefix):
 
-    check_call((' ').join([os.path.join(SCRIPTDIR, 'antsMultivariateTemplateConstruction2.sh'),
+    check_call((' ').join([os.path.join(SCRIPTDIR, 'antsMultivariateTemplateConstruction2_fixed_random_seed.sh'),
                            '-d', '3',
                            '-g', '0.2',
                            '-k', '2',
