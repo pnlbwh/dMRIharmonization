@@ -7,9 +7,11 @@
 Table of Contents
 =================
 
+
    * [Table of Contents](#table-of-contents)
    * [Multi-site dMRI harmonization](#multi-site-dmri-harmonization)
    * [Citation](#citation)
+   * [Requirements for data](#requirements-for-data)
    * [Dependencies](#dependencies)
    * [Installation](#installation)
       * [1. Install prerequisites](#1-install-prerequisites)
@@ -30,6 +32,7 @@ Table of Contents
    * [Order of spherical harmonics](#order-of-spherical-harmonics)
    * [Number of zero padding](#number-of-zero-padding)
    * [NRRD support](#nrrd-support)
+   * [Motion correction](#motion-correction)
    * [Preprocessing](#preprocessing)
       * [1. Denoising](#1-denoising)
       * [2. Bvalue mapping](#2-bvalue-mapping)
@@ -50,9 +53,10 @@ Table of Contents
       * [1. Template path](#1-template-path)
       * [2. Multi-processing](#2-multi-processing)
       * [3. X forwarding error](#3-x-forwarding-error)
-      * [4. Tracker](#4-tracker)
+      * [4. --force](#4---force)
+      * [5. Tracker](#5-tracker)
    * [Reference](#reference)
-
+    
 
 Table of Contents created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 
@@ -97,6 +101,35 @@ McAllister TW, Andaluz N, Shutter L, Coimbra R, Zafonte RD, Coleman MJ, Kubicki 
 Multi-site harmonization of diffusion MRI data in a registration framework. Brain Imaging Behav. 2018 Feb;12(1):284-295. 
 doi:10.1007/s11682-016-9670-y. PubMed PMID: 28176263.
 
+
+# Requirements for data
+
+1. Two groups of data from- *reference* and *target* sites are required. Control (healthy) subjects should be present 
+in each site.
+
+2. The groups between the sites should be very well matched for age, sex, socio-economic status, IQ and any other 
+demographic variable.
+
+3. A minimum of 16 subjects is required from each site for proper harmonization (so a minimum of 32 subjects in total).
+
+4. The data should be curated with the following steps prior to harmonization: 
+    
+    (i) axis alignment and centering
+    
+    (ii) signal dropped gradient removal
+    
+    (iii) eddy current and head motion correction
+    
+5. *dMRIharmonization* supports harmonization of data with similar b-values (i.e., one site with b-value of 1000 and 
+another with a b-value of 2500 is not supported currently). However, *multi-shell-dMRIharmonization* is under development 
+at https://github.com/pnlbwh/multi-shell-dMRIharmonization 
+
+
+If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact-
+
+*skarayumak@bwh.harvard.edu*
+
+*tbillah@bwh.harvard.edu*
 
 
 # Dependencies
@@ -276,7 +309,6 @@ The `harmonization.py` cli takes in the following arguments that are explained b
 * [--create](#template-creation)
 * [--debug](#debugging)
 * [--denoise](#1-denoising)
-* --force
 * [--harm_list VALUE:ExistingFile](#2.-use-seperately)
 * [--nproc VALUE:str](#multi-threading)
 * [--nshm VALUE:str](#order-of-spherical-harmonics)
@@ -300,19 +332,50 @@ A small test data is provided with each [release](https://github.com/pnlbwh/Harm
 You may test the whole pipeline as follows*:
     
     cd lib/tests
-    ./test_pipeline.sh
+    ./pipeline_test.sh
     
 NOTE: running the above test should take roughly an hour.
 
 `./pipeline_test.sh` will download test data*, and run the whole processing pipeline on them. 
 If the test is successful and complete, you should see the following output on the command line. 
     
-    CONNECTOM mean FA:  0.675917931134666
-    PRISMA mean FA before harmonization:  0.8008729791383536
-    PRISMA mean FA after harmonization:  0.6366103024088171
+    CONNECTOM mean FA:  0.6787134267438087
+    PRISMA mean FA before harmonization:  0.8016994786111754
+    PRISMA mean FA after harmonization:  0.6335818260201815
+    
+    
+In detail:
+
+    CONNECTOM site: 
+    mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: 
+    dwi_A_connectom_st_b1200_resampled.nii.gz 0.6664273368527192
+    dwi_B_connectom_st_b1200_resampled.nii.gz 0.6880572316659973
+    dwi_C_connectom_st_b1200_resampled.nii.gz 0.6816557117127096
+    
+    mean meanFA:  0.6787134267438087
+    std meanFA:  0.00907215035284852
+    
+    PRISMA site before harmonization: 
+    mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: 
+    dwi_A_prisma_st_b1200.nii.gz 0.7879066657395326
+    dwi_B_prisma_st_b1200.nii.gz 0.8126709307616746
+    dwi_C_prisma_st_b1200.nii.gz 0.8045208393323189
+    
+    mean meanFA:  0.8016994786111754
+    std meanFA:  0.010304926419301603
+    
+    PRISMA site after harmonization: 
+    mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: 
+    harmonized_dwi_A_prisma_st_b1200_resampled.nii.gz 0.6240905840733715
+    harmonized_dwi_B_prisma_st_b1200_resampled.nii.gz 0.6487062683838898
+    harmonized_dwi_C_prisma_st_b1200_resampled.nii.gz 0.6279486256032834
+    
+    mean meanFA:  0.6335818260201815
+    std meanFA:  0.010809954940438949
 
 
 \* If there is any problem downloading test data, try manually downloading and unzipping it to `lib/tests/` folder.
+
 
 ## 2. unittest
 You may run smaller and faster unittest as follows:
@@ -341,6 +404,23 @@ and have the same prefix as that of the `dwi.nii.gz` image.
 During template construction, you want to provide a **small list of images** to `--ref_list` and `--tar_list`. However, 
 provide a **complete list of images** you want to harmonize to `--tar_list` during [data harmonization](#data-harmonization)
 
+
+**NOTE** You should organize your images in folders named after caseids.
+
+You can generate a list of your dwis,masks as follows:
+    
+    cd projectDirectory
+    touch dwi_mask_list.txt
+    for i in GT_????
+    do 
+        echo `pwd`/$i/${i}_dwi_xc.nii.gz,`pwd`/$i/${i}_dwi_xc_mask.nii.gz >> dwi_mask_list.txt;
+    done
+
+
+In the above, dwis are organized in folders named after their caseids. Each folder has a name with the pattern `GT_????` 
+where `????` are four alphanumeric characters. You can specify your pattern and generate lists as above.
+
+
 # Site names
 
 Site names are used to properly identify files in the template:
@@ -367,13 +447,15 @@ RISH features are derived from spherical harmonic coefficients. The order of sph
 is limited by the lowest number of gradients present in the diffusion images between reference and target sites. 
 
 
-| `--nshm` | # of shm coefficients | Required # gradients >= |
-|----------|-----------------------|-------------------------|
-|    0     |            1          |           1             |
-|    2     |            6          |           6             |
-|    4     |            15         |           15            |
-|    6     |            28         |           28            |
-|    8     |            45         |           45            |
+| `--nshm` | # of shm coefficients | Required # of diffusion weighted gradients >= |
+|----------|-----------------------|----------------------------|
+|    2     |            6          |           6                |
+|    4     |            15         |           15               |
+|    6     |            28         |           28               |
+|    8     |            45         |           45               |
+
+
+**NOTE** For all diffusion images, at least 1 non-diffusion weighted gradient must be present.
 
 
 # Number of zero padding
@@ -391,6 +473,16 @@ conversion on the fly.
 
 See Tashrif Billah, Sylvain Bouix and Yogesh Rathi, Various MRI Conversion Tools, https://github.com/pnlbwh/conversion, 
 2019, DOI: 10.5281/zenodo.2584003 for more details on the conversion method.
+
+
+# Motion correction
+
+For better quality template creation, data should be axis aligned, centered, and eddy/motion corrected. You are welcome to use 
+your favorite algorithm for this purpose. You can also use the following scripts from our pipeline to do the above:
+
+https://github.com/pnlbwh/pnlNipype/blob/master/scripts/align.py
+
+https://github.com/pnlbwh/pnlNipype/blob/master/scripts/pnl_eddy.py
 
 
 # Preprocessing
@@ -553,22 +645,56 @@ for all the site images after harmonization increased to be almost equal to that
 
 Now there are two ways to debug:
 
-## 1. With the pipeline 
-Use `--debug` flag with any (or all) of `--create` and `--process`
+## 1. With the pipeline
+ 
+Use `--debug` flag with any (or all) of `--create` and `--process`. This option is handy when you have **same sets of data** 
+for both template creation and debugging. In that case, you would use the following and that should print the FA statistics 
+easily:
+
+    lib/harmonization.py \
+    --ref_list test_data/ref_caselist.txt \
+    --ref_name REF \
+    --tar_list test_data/target_caselist.txt \
+    --tar_name TAR \
+    --template test_data/template/ \
+    --create --process --debug       # debug altogether
+
 
 ## 2. Use seperately 
-If you would like to debug at a later time, you need to specify three images lists:
 
-* `--ref_list`: use the reference list with `.modified` extension
-* `--tar_list`: use the unprocessed target list **without** the `.modified` extension
-* `--harm_list`: use the harmonized target list that has `.harmonized` extension
+In theory, you want to create a template with small number of data from each sites and then use the template to harmonize 
+all of your data in the target site. Since the data for template creation and harmonization **are not same**, we don't have 
+luxury of using `--create --process --debug` altogether. Instead, you would use `--debug` with each of `--create` and 
+`--process`. The `--debug` flag creates some files that are used to obtain statistics later.
 
-    `lib/harmonization.py --ref_list ref.txt.modified --tar_list target.csv --harm_list target.csv.modified.harmonized`
 
-NOTE: You should run the pipeline first before debugging separately because `--debug` makes use of files created 
-in the pipeline.
+(i) Create template with `--debug` enabled:
+
+    lib/harmonization.py \
+    --ref_list test_data/ref_caselist.txt \
+    --ref_name REF \
+    --tar_list test_data/target_caselist.txt \
+    --tar_name TAR \
+    --template test_data/template/ \
+    --create --debug                 # enable debug
+    
+    
+(ii) Harmonize data with `--debug` enabled:
+
+    lib/harmonization.py \
+    --tar_list test_data/target_caselist.txt \
+    --tar_name TAR \
+    --template test_data/template/ \
+    --process --debug                # enable debug  
+
+
+(iii) Obtain statistics
+
+Follow instruction for [With a list of FA images](#3-with-a-list-of-fa-images) below:
+
 
 ## 3. With a list of FA images
+
 The repository provides a more discrete discrete script for finding the goodness of harmonization. 
 
 `$ lib/tests/fa_skeleton_test.py --help`
@@ -591,6 +717,11 @@ The repository provides a more discrete discrete script for finding the goodness
 This script does not depend of registration performed during the harmonization process. Rather, it performs all the 
 steps mentioned above ([Debugging: In details](#debugging)) and computes mean FA over skeleton across all subjects 
 in a site.
+
+
+**NOTE** It is advised not to use `--force` with debug. If you need to remove old files, do it manually. 
+See [Caveats](#caveats/issues) with `--force` [below](#4---force).
+
 
 # Travel heads
 
@@ -635,9 +766,20 @@ When using the latter option, be mindful that it may cause other programs requir
 in that particular terminal to malfunction.
     
 
-## 4. Tracker
+## 4. --force
+
+The purpose of `--force` flag is to overwrite previously created data. Usually, data are organized in separate folders 
+for cases. However, if all data are brought to one folder and *dMRIharmonization* is run with `--force` flag, 
+then it will delete reference site's `harm` and `dti` folders. This is a problem when you want to `--debug` simultaneously. 
+`--debug` would need data from reference and target sites available all together. To conclude, it is advised to organize 
+data in separate folders for cases.
+
+
+## 5. Tracker
 
 In any case, feel free to submit an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues). We shall get back to you as soon as possible.
+
+
 
 # Reference
 
@@ -647,4 +789,3 @@ inter-group FA differences. Neuroimage 2018;172:40-50.
 
 Billah, Tashrif; Bouix, Sylvain; Rathi, Yogesh; Various MRI Conversion Tools, 
 https://github.com/pnlbwh/conversion, 2019, DOI: 10.5281/zenodo.2584003.
-
