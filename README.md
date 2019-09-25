@@ -122,10 +122,11 @@ demographic variable.
     
 5. *dMRIharmonization* supports harmonization of data with similar b-values (i.e., one site with b-value of 1000 and 
 another with a b-value of 2500 is not supported currently). However, *multi-shell-dMRIharmonization* is under development 
-at https://github.com/pnlbwh/multi-shell-dMRIharmonization 
+at https://github.com/pnlbwh/multi-shell-dMRIharmonization . For the multi-shell algorithm, b-values in each b-shell 
+should have similar b-values (i.e, if one site has b-value 1000, the other one should have in the range [900,1100]).
 
 
-If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact-
+If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact -
 
 *skarayumak@bwh.harvard.edu*
 
