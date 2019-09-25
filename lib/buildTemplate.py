@@ -22,7 +22,8 @@ from util import *
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-config.read(os.path.join(SCRIPTDIR,'config.ini'))
+# config.read(os.path.join(SCRIPTDIR,'config.ini'))
+config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures= [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
@@ -39,7 +40,6 @@ def applyXform(inImg, refImg, warp, trans, outImg):
         ] & FG
 
 
-# def warp_bands(dtiPath, rishPath, maskPath, templatePath, N_shm, diffusionMeasures):
 def warp_bands(imgPath, maskPath, templatePath):
 
     prefix= os.path.basename(imgPath).split('.')[0]
@@ -51,7 +51,7 @@ def warp_bands(imgPath, maskPath, templatePath):
     applyXform(maskPath,
                os.path.join(templatePath, 'template0.nii.gz'),
                warp, trans,
-               maskPath.split('.')[0]+ 'Warped.nii.gz')
+               os.path.join(templatePath, os.path.abspath(maskPath).split('.')[0]+ 'Warped.nii.gz'))
 
 
     # warping the rish features
@@ -59,7 +59,7 @@ def warp_bands(imgPath, maskPath, templatePath):
         applyXform(os.path.join(directory, 'harm', f'{prefix}_L{i}.nii.gz'),
            os.path.join(templatePath, 'template0.nii.gz'),
            warp, trans,
-           os.path.join(directory, 'harm', f'{prefix}_WarpedL{i}.nii.gz'))
+           os.path.join(templatePath, f'{prefix}_WarpedL{i}.nii.gz'))
 
 
     # warping the diffusion measures
@@ -67,7 +67,7 @@ def warp_bands(imgPath, maskPath, templatePath):
         applyXform(os.path.join(directory, 'dti', f'{prefix}_{dm}.nii.gz'),
                    os.path.join(templatePath, 'template0.nii.gz'),
                    warp, trans,
-                   os.path.join(directory, 'dti', f'{prefix}_Warped{dm}.nii.gz'))
+                   os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))
 
 
 def createAntsCaselist(imgs, file):
@@ -101,7 +101,8 @@ def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
 
     maskData = []
     for maskPath in masks:
-        maskData.append(load_nifti(maskPath.split('.')[0]+ 'Warped.nii.gz')[0])
+        maskData.append(load_nifti(os.path.join(templatePath, os.path.abspath(maskPath).split('.')[0] + 'Warped.nii.gz'))[0])
+
 
     morphed_mask= binary_opening(np.mean(maskData, axis= 0)>0.5, structure= generate_binary_structure(3,1))*1
     morphed_mask_name= os.path.join(templatePath, f'{siteName}_Mask.nii.gz')
@@ -112,8 +113,7 @@ def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
     for dm in diffusionMeasures:
         for imgPath in imgs:
             prefix = os.path.basename(imgPath).split('.')[0]
-            directory = os.path.dirname(imgPath)
-            imgData.append(load_nifti(os.path.join(directory, 'dti', f'{prefix}_Warped{dm}.nii.gz'))[0])
+            imgData.append(load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0])
 
         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_{dm}.nii.gz'),
                                 np.mean(imgData, axis= 0), templateAffine, templateHdr)
@@ -130,8 +130,7 @@ def rish_stat(siteName, imgs, templatePath, templateHdr):
         imgData= []
         for imgPath in imgs:
             prefix = os.path.basename(imgPath).split('.')[0]
-            directory = os.path.dirname(imgPath)
-            imgData.append(load_nifti(os.path.join(directory, 'harm', f'{prefix}_WarpedL{i}.nii.gz'))[0])
+            imgData.append(load_nifti(os.path.join(templatePath, f'{prefix}_WarpedL{i}.nii.gz'))[0])
 
         templateAffine= templateHdr.get_best_affine()
         save_nifti(os.path.join(templatePath, f'Mean_{siteName}_L{i}.nii.gz'),
@@ -189,7 +188,7 @@ def stat_calc(ref, target, mask):
 
 
 def difference_calc(refSite, targetSite, refImgs, targetImgs,
-                    templatePath, templateHdr, subDir, mask, measures):
+                    templatePath, templateHdr, mask, measures):
 
     '''
     if traveling heads:
@@ -213,12 +212,10 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         if travelHeads:
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
-                directory = os.path.dirname(refImg)
-                ref= load_nifti(os.path.join(directory, subDir, f'{prefix}_Warped{dm}.nii.gz'))[0]
+                ref= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
 
                 prefix = os.path.basename(targetImg).split('.')[0]
-                directory = os.path.dirname(targetImg)
-                target= load_nifti(os.path.join(directory, subDir, f'{prefix}_Warped{dm}.nii.gz'))[0]
+                target= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
 
                 temp= stat_calc(ref, target, mask)
                 delta.append(temp[0])

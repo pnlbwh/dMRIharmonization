@@ -22,7 +22,8 @@ from preprocess import dti_harm, preprocessing
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-config.read(os.path.join(SCRIPTDIR,'config.ini'))
+# config.read(os.path.join(SCRIPTDIR,'config.ini'))
+config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
 debug = int(config['DEFAULT']['debug'])

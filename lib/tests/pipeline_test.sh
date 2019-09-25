@@ -54,7 +54,6 @@ write_list prisma.txt
 --tar_list prisma.txt \
 --ref_name CONNECTOM \
 --tar_name PRISMA \
---nshm 4 \
 --nproc -1 \
 --create --process --debug
 
