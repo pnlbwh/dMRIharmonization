@@ -69,10 +69,10 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
         highResImg= np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
         for i in np.where(bvals != 0)[0]:
             print('Resampling gradient ', i)
-            highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'constant')
+            highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'symmetric')
 
         # resample the b0 -----------------------------------------------------------------
-        b0HighRes = resize(b0, (sx, sy, sz), order=sOrder, mode='constant')
+        b0HighRes = resize(b0, (sx, sy, sz), order=sOrder, mode= 'symmetric')
         
         
         # resample the mask
