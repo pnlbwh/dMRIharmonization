@@ -60,19 +60,24 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
     sp_low= lowResImgHdr['pixdim'][1:4]
 
-    spatial_factor = sp_low / sp_high
-    sx, sy, sz = [int(round(x)) for x in lowResImg.shape[:3] * spatial_factor]
 
     if interp_toolbox=='scipy':
+        spatial_factor = sp_low / sp_high
+        sx, sy, sz = [int(x) for x in lowResImg.shape[:3] * spatial_factor]
 
         # resample the dwi ----------------------------------------------------------------
         highResImg= np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
         for i in np.where(bvals != 0)[0]:
             print('Resampling gradient ', i)
-            highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'constant')
+            highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'symmetric')
 
         # resample the b0 -----------------------------------------------------------------
-        b0HighRes = resize(b0, (sx, sy, sz), order=sOrder, mode='constant')
+        b0HighRes = resize(b0, (sx, sy, sz), order=sOrder, mode= 'symmetric')
+        
+        
+        # resample the mask
+        highResMask= resize(lowResMask.astype('float'), (sx, sy, sz), order= 1, mode= 'symmetric') # order 1 for linear interpolation
+        
 
     elif interp_toolbox=='spm':
         step = sp_high / sp_low
@@ -98,12 +103,24 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
         os.remove(inPrefix+'_data.mat')
         os.remove(inPrefix+'_resampled.mat')
 
+
+        # resample the mask
+        inPrefix= lowResMaskPath.split('.')[0]
+        savemat(inPrefix+'_sp.mat', {'sp_high':sp_high,'sp_low':sp_low, 'imgDim':lowResImg.shape[:3], 'sOrder':1})
+        highResMask= resize_spm(lowResMask, lowResMaskPath.split('.')[0])
+
+        
+        # clean up the mat files
+        os.remove(inPrefix+'_sp.mat')
+        os.remove(inPrefix+'_data.mat')
+        os.remove(inPrefix+'_resampled.mat')
+
     else:
         raise ValueError('Undefined interp_toolbox')
 
-    # resample the mask ---------------------------------------------------------------
+
+    # process the resampled mask --------------------------------------------------------------
     highResMaskPath = lowResMaskPath.split('.')[0] + '_resampled.nii.gz'
-    highResMask= resize(lowResMask.astype('float'), (sx, sy, sz), order= 1, mode= 'constant') # order 1 for linear interpolation
     highResMask= binary_opening(highResMask >= 0.5, structure=generate_binary_structure(3, 1)) * 1
     save_high_res(highResMaskPath, sp_high, lowResMaskHdr, highResMask.astype('uint8'))
 
