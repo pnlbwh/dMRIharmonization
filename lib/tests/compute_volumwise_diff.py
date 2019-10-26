@@ -21,6 +21,8 @@ with warnings.catch_warnings():
 from conversion import read_bvals, read_bvecs
 import numpy as np
 import sys
+from test_util import B0_THRESH
+
 
 np.set_printoptions(precision=5)
 # BINS= [0, 1, 5, 10, np.inf]
@@ -143,8 +145,8 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
 def stack_one_b0(bvals, bvecs= None, dwi=None):
 
     bvals= np.array(bvals)
-    where_b0 = np.where(bvals == 0)[0]
-    where_dwi = np.where(bvals != 0)[0]
+    where_b0 = np.where(bvals <= B0_THRESH)[0]
+    where_dwi = np.where(bvals > B0_THRESH)[0]
 
     reduced_ind= [where_b0[0]]
     for i in where_dwi:

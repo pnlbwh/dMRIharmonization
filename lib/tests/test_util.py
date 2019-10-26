@@ -23,6 +23,8 @@ LIBDIR= dirname(FILEDIR)
 
 # sys.path.append(FILEDIR)
 sys.path.append(LIBDIR)
+from util import B0_THRESH
+
 
 import warnings
 with warnings.catch_warnings():
