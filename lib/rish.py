@@ -33,7 +33,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
         bvecs= np.append(bvecs, -bvecs, axis= 0)
         data= np.append(data, data, axis=3)
 
-        gtab = gradient_table(bvals,  bvecs)
+        gtab = gradient_table(bvals,  bvecs, b0_threshold= B0_THRESH)
         qb_model = QballModel(gtab, sh_order=N_shm)
 
         # save baseline image

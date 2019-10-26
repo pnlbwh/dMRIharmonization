@@ -19,7 +19,7 @@ from normalize import normalize_data
 def remapBval(dwi, mask, bvals, bNew):
 
     # find b0
-    where_b0= np.where(bvals == 0)[0]
+    where_b0= np.where(bvals <= B0_THRESH)[0]
 
     # normalize dwi by b0
     dwiPrime, b0 = normalize_data(dwi, where_b0, mask)

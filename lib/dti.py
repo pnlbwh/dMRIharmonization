@@ -24,7 +24,7 @@ def dti(imgPath, maskPath, inPrefix, outPrefix, tool='FSL'):
 
         bvals, bvecs = read_bvals_bvecs(inPrefix + '.bval', inPrefix + '.bvec')
 
-        gtab= gradient_table(bvals, bvecs)
+        gtab= gradient_table(bvals, bvecs, b0_threshold= B0_THRESH)
         dtimodel= dipyDti.TensorModel(gtab, fit_method="LS")
         dtifit= dtimodel.fit(masked_vol)
         fa= dtifit.fa

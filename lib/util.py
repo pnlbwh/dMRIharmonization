@@ -45,3 +45,7 @@ def convertedPath(imgPath):
 
     return imgPath
 
+
+B0_THRESH= 50.
+B_QUANT= 50.
+BSHELL_MIN_DIST= 100.
