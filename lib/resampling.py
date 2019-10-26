@@ -54,7 +54,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     # order for b spline interpolation
     sOrder= 7
 
-    where_b0 = np.where(bvals == 0)[0]
+    where_b0 = np.where(bvals <= B0_THRESH)[0]
     lowResImgPrime, b0= normalize_data(lowResImg, mask= lowResMask, where_b0= where_b0)
     lowResImg= applymask(lowResImgPrime, b0)
 
@@ -67,7 +67,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
         # resample the dwi ----------------------------------------------------------------
         highResImg= np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
-        for i in np.where(bvals != 0)[0]:
+        for i in np.where(bvals > B0_THRESH)[0]:
             print('Resampling gradient ', i)
             highResImg[:,:,:,i]= resize(lowResImg[:,:,:,i], (sx, sy, sz), order= sOrder, mode= 'symmetric')
 
@@ -90,7 +90,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
         # resample the dwi ----------------------------------------------------------------
         highResImg = np.zeros((sx, sy, sz, lowResImg.shape[3]), dtype='float')
 
-        for i in np.where(bvals != 0)[0]:
+        for i in np.where(bvals > B0_THRESH)[0]:
             print('Resampling gradient ', i)
             highResImg[:,:,:,i]= resize_spm(lowResImg[:,:,:,i], inPrefix)
 

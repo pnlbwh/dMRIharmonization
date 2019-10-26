@@ -16,10 +16,7 @@
 from conversion import read_bvals, write_bvals
 import numpy as np
 from os.path import abspath
-
-B0_THRESH= 50.
-B_QUANT= 50.
-BSHELL_MIN_DIST= 100.
+from util import B0_THRESH, B_QUANT, BSHELL_MIN_DIST
 
 
 def usage():
