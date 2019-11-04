@@ -36,7 +36,7 @@ def applyXform(inImg, refImg, warp, trans, outImg):
         '-i', inImg,
         '-o', outImg,
         '-r', refImg,
-        '-t', warp, trans
+        '-t', warp, '-t', trans
         ] & FG
 
 
