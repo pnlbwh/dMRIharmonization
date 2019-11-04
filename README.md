@@ -48,7 +48,7 @@ Table of Contents
       * [1. With the pipeline](#1-with-the-pipeline)
       * [2. Use seperately](#2-use-seperately)
       * [3. Obtain site statistics](#3-obtain-site-statistics)
-      * [4. With a list of FA images](#3-with-a-list-of-fa-images)
+      * [4. With a list of FA images](#4-with-a-list-of-fa-images)
    * [Travel heads](#travel-heads)
    * [Caveats/Issues](#caveatsissues)
       * [1. Template path](#1-template-path)
@@ -298,7 +298,7 @@ Upon successful installation, you should be able to see the help message
                                             dwi2,mask2 ...
         --ref_name VALUE:str                reference site name; required
         --resample VALUE:str                voxel size MxNxO to resample into
-        --stats                             print statistics of all sites, useful for recomputing --debug statistics
+        --stats                             print statistics of all sites, useful for recomputing --debug statistics separately
         --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
                                             dwi2,mask2 ...
         --tar_name VALUE:str                target site name; required
@@ -712,10 +712,12 @@ Whether you have same or different sets of data for template creation and harmon
     
 A few things to note in the above command are:
 
-(i) You should have used `--debug` with `--create` and `--process` before. As mentioned earlier, `--debug` flag creates some files that are used to obtain statistics later.
+(i) You should have used `--debug` with `--create` ([Template creation](#template-creation)) and `--process` ([Data harmonization](#data-harmonization)) before. 
+As mentioned earlier, `--debug` flag creates some files that are used to obtain statistics later.
 
 (ii) Note the `.modified` suffix for `--ref_list` and no such suffix for `--tar_list`. Reference data is preprocessed before 
-comparing against the rest. Hence, the `.modified` suffix is there for `--ref_list`. On the other hand, measures from raw target data is compared against the rest. So, there is no such suffix for `--tar_list`. Finally, as the name suggests, `.modified.harmonized` suffix is for harmonized data.
+comparing against the rest. Hence, the `.modified` suffix is there for `--ref_list`. On the other hand, measures from raw target data is compared against the rest. 
+So, there is no such suffix for `--tar_list`. Finally, as the name suggests, `.modified.harmonized` suffix is for harmonized data.
 
 
 

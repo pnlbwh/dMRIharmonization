@@ -183,7 +183,7 @@ class pipeline(cli.Application):
 
     stats = cli.Flag(
         '--stats',
-        help='print statistics of all sites, useful for recomputing --debug statistics')
+        help='print statistics of all sites, useful for recomputing --debug statistics separately')
 
 
     diffusionMeasures = ['MD', 'FA', 'GFA']
@@ -340,7 +340,7 @@ class pipeline(cli.Application):
 
     def post_debug(self):
 
-        from debug_fa import sub2tmp2mni, analyzeStat
+        from debug_fa import sub2tmp2mni
 
         refImgs, _ = read_imgs_masks(self.ref_csv)
         targetImgs, _= read_imgs_masks(self.target_csv)
@@ -357,7 +357,7 @@ class pipeline(cli.Application):
 
     def showStat(self):
 
-        from debug_fa import sub2tmp2mni, analyzeStat
+        from debug_fa import analyzeStat
 
         print('\n\nPrinting statistics :\n\n')
 
