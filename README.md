@@ -47,7 +47,8 @@ Table of Contents
    * [Debugging](#debugging)
       * [1. With the pipeline](#1-with-the-pipeline)
       * [2. Use seperately](#2-use-seperately)
-      * [3. With a list of FA images](#3-with-a-list-of-fa-images)
+      * [3. Obtain site statistics](#3-obtain-site-statistics)
+      * [4. With a list of FA images](#3-with-a-list-of-fa-images)
    * [Travel heads](#travel-heads)
    * [Caveats/Issues](#caveatsissues)
       * [1. Template path](#1-template-path)
@@ -297,6 +298,7 @@ Upon successful installation, you should be able to see the help message
                                             dwi2,mask2 ...
         --ref_name VALUE:str                reference site name; required
         --resample VALUE:str                voxel size MxNxO to resample into
+        --stats                             print statistics of all sites, useful for recomputing --debug statistics
         --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
                                             dwi2,mask2 ...
         --tar_name VALUE:str                target site name; required
@@ -318,6 +320,7 @@ The `harmonization.py` cli takes in the following arguments that are explained b
 * [--ref_list VALUE:ExistingFile](#list-of-images)
 * [--ref_name VALUE:str](#site-names)
 * [--resample VALUE:str](#3-resampling)
+* [--stats](#3-obtain-site-statistics)
 * [--tar_list VALUE:ExistingFile](#list-of-images)
 * [--tar_name VALUE:str](#site-names)
 * [--template VALUE:str](#template)
@@ -686,7 +689,7 @@ luxury of using `--create --process --debug` altogether. Instead, you would use 
     --tar_list test_data/target_caselist.txt \
     --tar_name TAR \
     --template test_data/template/ \
-    --process --debug                # enable debug  
+    --process --debug                # enable debug
 
 
 (iii) Obtain statistics
@@ -694,7 +697,29 @@ luxury of using `--create --process --debug` altogether. Instead, you would use 
 Follow instruction for [With a list of FA images](#3-with-a-list-of-fa-images) below:
 
 
-## 3. With a list of FA images
+## 3. Obtain site statistics
+
+Whether you have same or different sets of data for template creation and harmonization, you can obtain site statistics at a later time as follows:
+
+    lib/harmonization.py \
+    --ref_list test_data/ref_caselist.txt.modified \
+    --ref_name REF \
+    --tar_list test_data/target_caselist.txt \
+    --tar_name TAR \
+    --harm_list test_data/target_caselist.txt.modified.harmonized \
+    --template test_data/template/ \
+    --stats
+    
+A few things to note in the above command are:
+
+(i) You should have used `--debug` with `--create` and `--process` before. As mentioned earlier, `--debug` flag creates some files that are used to obtain statistics later.
+
+(ii) Note the `.modified` suffix for `--ref_list` and no such suffix for `--tar_list`. Reference data is preprocessed before 
+comparing against the rest. Hence, the `.modified` suffix is there for `--ref_list`. On the other hand, measures from raw target data is compared against the rest. So, there is no such suffix for `--tar_list`. Finally, as the name suggests, `.modified.harmonized` suffix is for harmonized data.
+
+
+
+## 4. With a list of FA images
 
 The repository provides a more discrete discrete script for finding the goodness of harmonization. 
 
