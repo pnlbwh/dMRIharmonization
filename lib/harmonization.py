@@ -181,6 +181,10 @@ class pipeline(cli.Application):
         help= 'target site name',
         mandatory= True)
 
+    stats = cli.Flag(
+        '--stats',
+        help='print statistics of all sites, useful for recomputing --debug statistics')
+
 
     diffusionMeasures = ['MD', 'FA', 'GFA']
 
@@ -343,31 +347,38 @@ class pipeline(cli.Application):
 
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
-        ref_mean = analyzeStat(self.ref_csv, self.templatePath)
 
         print('\n\n Target site before harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.tar_unproc_csv, tar_unproc= True)
-        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)
 
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
-        target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
+
+
+    def showStat(self):
+
+        from debug_fa import sub2tmp2mni, analyzeStat
 
         print('\n\nPrinting statistics :\n\n')
 
         print(f'{self.reference} site: ')
+        ref_mean = analyzeStat(self.ref_csv, self.templatePath)
         printStat(ref_mean, self.ref_csv)
+
         print(f'{self.target} site before harmonization: ')
+        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)        
         printStat(target_mean_before, self.tar_unproc_csv)
+
         print(f'{self.target} site after harmonization: ')
+        target_mean_after = analyzeStat(self.harm_csv, self.templatePath) 
         printStat(target_mean_after, self.harm_csv)
 
 
     def sanityCheck(self):
 
-        if not (self.create or self.process or self.debug):
+        if not (self.create or self.process or self.debug or self.stats):
             raise AttributeError('No option selected, ' 
-                                'specify one (or many of) creation, harmonization, and debug flags')
+                                 'specify one (or many of) creation, harmonization, debug, and stats flags')
 
         # check ants commands
         external_commands= [
@@ -401,7 +412,7 @@ class pipeline(cli.Application):
         else:
             self.tar_unproc_csv= str(self.target_csv)
 
-
+        
         # check appropriateness of N_shm
         if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
             raise ValueError('2<= --nshm <=8')
@@ -425,7 +436,7 @@ class pipeline(cli.Application):
         # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
         elif self.N_shm==-1 and self.process:
             for i in range(0,8,2):
-                if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}_b{self.bshell_b}.nii.gz')):
+                if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}.nii.gz')):
                     self.N_shm= i
                 else:
                     break
@@ -464,9 +475,13 @@ class pipeline(cli.Application):
         if self.create and self.process and self.debug:
             self.post_debug()
 
+        if self.stats and (self.create or self.process or self.debug):
+            raise AttributeError('--stats option is for recomputing site statistics exclusively')
+        else:
+            self.showStat()
 
         os.remove(configFile)
-
+        
 
 if __name__ == '__main__':
     pipeline.run()
