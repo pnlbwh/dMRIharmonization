@@ -780,7 +780,7 @@ As mentioned earlier, `--debug` flag creates some files that are used to obtain 
 
 (ii) Note the `.modified` suffix for `--ref_list` and no such suffix for `--tar_list`. Reference data is preprocessed before 
 comparing against the rest. Hence, the `.modified` suffix is there for `--ref_list`. On the other hand, measures from raw target data is compared against the rest. 
-So, there is no such suffix for `--tar_list`. Finally, as the name suggests, `.modified.harmonized` suffix is for harmonized data.
+So, there is no such suffix for `--tar_list`. Finally, as the name suggests, `.modified.harmonized` suffix is for harmonized data provided by `--harm_list`.
 
 
 
