@@ -19,7 +19,7 @@ import multiprocessing
 import numpy as np
 from test_util import *
 import argparse
-from conversion import read_imgs
+from conversion import read_imgs, read_imgs_masks
 
 ROOTDIR= abspath(pjoin(LIBDIR, '..'))
 mniTmp = pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA.nii.gz')
@@ -74,7 +74,7 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
     antsReg(dmTmp, maskTmp, imgPath, outPrefix)
 
     for dm in diffusionMeasures:
-        output = pjoin(directory, prefix + f'_InMNI_{dm}.nii.gz')
+        output = pjoin(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
         moving = pjoin(directory, prefix + f'_{dm}.nii.gz')
         # warp diffusion measure to template space first, then to MNI space
         antsApplyTransforms[
@@ -85,7 +85,9 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
             '-t', warp2mni, trans2mni, warp2tmp, trans2tmp
         ] & FG
 
-    return pjoin(directory, prefix + f'_InMNI_FA.nii.gz')
+    return pjoin(templatePath, prefix + f'_InMNI_FA.nii.gz')
+
+
 
 def sub2tmp2mni(templatePath, siteName, faImgs, N_proc):
 
@@ -137,7 +139,10 @@ def main():
 
     parser = argparse.ArgumentParser(description='''Warps diffusion measures (FA, MD, GFA) to template space 
     and then to MNI space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz''')
-    parser.add_argument('-i', '--input', type=str, required=True, help='input list of FA images')
+    parser.add_argument('-i', '--input', type=str, required=True,
+        help='a .txt/.csv file having one column for FA imgs, '
+             'or two columns for (img,mask) pair, the latter list is what you used in/obtained from harmonization.py'
+             'see documentation for more details')
     parser.add_argument('-s', '--site', type= str, required=True,
                         help='site name for locating template FA and mask in tempalte directory')
     parser.add_argument('-t', '--template', type=str, required=True,
@@ -145,13 +150,31 @@ def main():
     parser.add_argument('--ncpu', help='number of cpus to use', default= '4')
 
     args = parser.parse_args()
-    imgList=args.input
+    imgList=abspath(args.input)
     siteName=args.site
-    templatePath=args.template
+    templatePath=abspath(args.template)
     N_proc= int(args.ncpu)
 
     # read FA image list
-    faImgs= read_imgs(imgList)
+    try:
+        imgs, _ = read_imgs_masks(imgList)
+        print('imgs,masks list is provided. FA images are assumed to be directoryOfImg/dti/ImgPrefix_FA.nii.gz, make sure they are there')
+        faImgs= []
+
+        for imgPath in imgs:
+            directory = dirname(imgPath)
+            prefix = basename(imgPath).split('.')[0]
+            faImg= pjoin(directory, 'dti', prefix+ '_FA.nii.gz')
+            if not isfile(faImg):
+                raise FileNotFoundError(f'{faImg} not found. Did you run \"--create --debug\" and \"--process --debug\" before?')
+
+            faImgs.append(faImg)
+
+
+    except:
+        faImgs= read_imgs(imgList)
+        print('FA image list is provided.')
+
 
     # register and obtain *_InMNI_FA.nii.gz
     mniFAimgs= sub2tmp2mni(templatePath, siteName, faImgs, N_proc)
