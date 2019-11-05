@@ -181,6 +181,10 @@ class pipeline(cli.Application):
         help= 'target site name',
         mandatory= True)
 
+    stats = cli.Flag(
+        '--stats',
+        help='print statistics of all sites, useful for recomputing --debug statistics separately')
+
 
     diffusionMeasures = ['MD', 'FA', 'GFA']
 
@@ -336,38 +340,48 @@ class pipeline(cli.Application):
 
     def post_debug(self):
 
-        from debug_fa import sub2tmp2mni, analyzeStat
+        from debug_fa import sub2tmp2mni
 
         refImgs, _ = read_imgs_masks(self.ref_csv)
         targetImgs, _= read_imgs_masks(self.target_csv)
 
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
-        ref_mean = analyzeStat(self.ref_csv, self.templatePath)
 
         print('\n\n Target site before harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.tar_unproc_csv, tar_unproc= True)
-        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)
 
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
-        target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
+
+        
+        self.showStat()
+
+
+    def showStat(self):
+
+        from debug_fa import analyzeStat
 
         print('\n\nPrinting statistics :\n\n')
 
         print(f'{self.reference} site: ')
+        ref_mean = analyzeStat(self.ref_csv, self.templatePath)
         printStat(ref_mean, self.ref_csv)
+
         print(f'{self.target} site before harmonization: ')
+        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)        
         printStat(target_mean_before, self.tar_unproc_csv)
+
         print(f'{self.target} site after harmonization: ')
+        target_mean_after = analyzeStat(self.harm_csv, self.templatePath) 
         printStat(target_mean_after, self.harm_csv)
 
 
     def sanityCheck(self):
 
-        if not (self.create or self.process or self.debug):
+        if not (self.create or self.process or self.debug or self.stats):
             raise AttributeError('No option selected, ' 
-                                'specify one (or many of) creation, harmonization, and debug flags')
+                                 'specify one (or many of) creation, harmonization, debug, and stats flags')
 
         # check ants commands
         external_commands= [
@@ -389,6 +403,8 @@ class pipeline(cli.Application):
 
 
     def main(self):
+        
+        self.sanityCheck()       
 
         self.templatePath= os.path.abspath(self.templatePath)
         self.N_shm= int(self.N_shm)
@@ -401,42 +417,42 @@ class pipeline(cli.Application):
         else:
             self.tar_unproc_csv= str(self.target_csv)
 
+        if not self.stats:        
+            # check appropriateness of N_shm
+            if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
+                raise ValueError('2<= --nshm <=8')
 
-        # check appropriateness of N_shm
-        if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
-            raise ValueError('2<= --nshm <=8')
 
 
+            # determine N_shm in default mode during template creation
+            if self.N_shm==-1 and self.create:
+                if self.ref_csv:
+                    ref_nshm_img = read_imgs_masks(self.ref_csv)[0][0]
+                elif self.target_csv:
+                    ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
 
-        # determine N_shm in default mode during template creation
-        if self.N_shm==-1 and self.create:
+                directory= os.path.dirname(ref_nshm_img)
+                prefix= os.path.basename(ref_nshm_img).split('.')[0]
+                bvalFile= os.path.join(directory, prefix+'.bval')
+                self.N_shm, _= determineNshm(bvalFile)
+
+
+            # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
+            # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
+            elif self.N_shm==-1 and self.process:
+                for i in range(0,8,2):
+                    if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}.nii.gz')):
+                        self.N_shm= i
+                    else:
+                        break
+
+
+            # verify validity of provided/determined N_shm for all subjects
+            # single-shell-ness is verified inside verifyNshmForAll
             if self.ref_csv:
-                ref_nshm_img = read_imgs_masks(self.ref_csv)[0][0]
-            elif self.target_csv:
-                ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
-
-            directory= os.path.dirname(ref_nshm_img)
-            prefix= os.path.basename(ref_nshm_img).split('.')[0]
-            bvalFile= os.path.join(directory, prefix+'.bval')
-            self.N_shm, _= determineNshm(bvalFile)
-
-
-        # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
-        # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
-        elif self.N_shm==-1 and self.process:
-            for i in range(0,8,2):
-                if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}_b{self.bshell_b}.nii.gz')):
-                    self.N_shm= i
-                else:
-                    break
-
-
-        # verify validity of provided/determined N_shm for all subjects
-        # single-shell-ness is verified inside verifyNshmForAll
-        if self.ref_csv:
-            verifyNshmForAll(self.ref_csv, self.N_shm)
-        if self.target_csv:
-            verifyNshmForAll(self.target_csv, self.N_shm)
+                verifyNshmForAll(self.ref_csv, self.N_shm)
+            if self.target_csv:
+                verifyNshmForAll(self.target_csv, self.N_shm)
 
         # copy provided config file to temporary directory
         configFile= f'/tmp/harm_config_{os.getpid()}.ini'
@@ -453,8 +469,6 @@ class pipeline(cli.Application):
             f.write('diffusionMeasures = {}\n'.format((',').join(self.diffusionMeasures)))
 
 
-        self.sanityCheck()
-
         if self.create:
             self.createTemplate()
 
@@ -464,9 +478,14 @@ class pipeline(cli.Application):
         if self.create and self.process and self.debug:
             self.post_debug()
 
+        if self.stats:
+            if (self.create or self.process or self.debug):
+                raise AttributeError('--stats option is for recomputing site statistics exclusively')
+            else:
+                self.showStat()
 
         os.remove(configFile)
-
+        
 
 if __name__ == '__main__':
     pipeline.run()
