@@ -320,7 +320,7 @@ The `harmonization.py` cli takes in the following arguments that are explained b
 * [--ref_list VALUE:ExistingFile](#list-of-images)
 * [--ref_name VALUE:str](#site-names)
 * [--resample VALUE:str](#3-resampling)
-* [--stats](#3-obtain-site-statistics)
+* [--stats](#4-recompute-site-statistics)
 * [--tar_list VALUE:ExistingFile](#list-of-images)
 * [--tar_name VALUE:str](#site-names)
 * [--template VALUE:str](#template)
