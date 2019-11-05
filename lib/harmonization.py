@@ -354,6 +354,9 @@ class pipeline(cli.Application):
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
 
+        
+        self.showStat()
+
 
     def showStat(self):
 
@@ -400,6 +403,8 @@ class pipeline(cli.Application):
 
 
     def main(self):
+        
+        self.sanityCheck()       
 
         self.templatePath= os.path.abspath(self.templatePath)
         self.N_shm= int(self.N_shm)
@@ -412,42 +417,42 @@ class pipeline(cli.Application):
         else:
             self.tar_unproc_csv= str(self.target_csv)
 
-        
-        # check appropriateness of N_shm
-        if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
-            raise ValueError('2<= --nshm <=8')
+        if not self.stats:        
+            # check appropriateness of N_shm
+            if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
+                raise ValueError('2<= --nshm <=8')
 
 
 
-        # determine N_shm in default mode during template creation
-        if self.N_shm==-1 and self.create:
+            # determine N_shm in default mode during template creation
+            if self.N_shm==-1 and self.create:
+                if self.ref_csv:
+                    ref_nshm_img = read_imgs_masks(self.ref_csv)[0][0]
+                elif self.target_csv:
+                    ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
+
+                directory= os.path.dirname(ref_nshm_img)
+                prefix= os.path.basename(ref_nshm_img).split('.')[0]
+                bvalFile= os.path.join(directory, prefix+'.bval')
+                self.N_shm, _= determineNshm(bvalFile)
+
+
+            # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
+            # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
+            elif self.N_shm==-1 and self.process:
+                for i in range(0,8,2):
+                    if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}.nii.gz')):
+                        self.N_shm= i
+                    else:
+                        break
+
+
+            # verify validity of provided/determined N_shm for all subjects
+            # single-shell-ness is verified inside verifyNshmForAll
             if self.ref_csv:
-                ref_nshm_img = read_imgs_masks(self.ref_csv)[0][0]
-            elif self.target_csv:
-                ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
-
-            directory= os.path.dirname(ref_nshm_img)
-            prefix= os.path.basename(ref_nshm_img).split('.')[0]
-            bvalFile= os.path.join(directory, prefix+'.bval')
-            self.N_shm, _= determineNshm(bvalFile)
-
-
-        # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
-        # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
-        elif self.N_shm==-1 and self.process:
-            for i in range(0,8,2):
-                if os.path.isfile(os.path.join(self.templatePath, f'Scale_L{i}.nii.gz')):
-                    self.N_shm= i
-                else:
-                    break
-
-
-        # verify validity of provided/determined N_shm for all subjects
-        # single-shell-ness is verified inside verifyNshmForAll
-        if self.ref_csv:
-            verifyNshmForAll(self.ref_csv, self.N_shm)
-        if self.target_csv:
-            verifyNshmForAll(self.target_csv, self.N_shm)
+                verifyNshmForAll(self.ref_csv, self.N_shm)
+            if self.target_csv:
+                verifyNshmForAll(self.target_csv, self.N_shm)
 
         # copy provided config file to temporary directory
         configFile= f'/tmp/harm_config_{os.getpid()}.ini'
@@ -464,8 +469,6 @@ class pipeline(cli.Application):
             f.write('diffusionMeasures = {}\n'.format((',').join(self.diffusionMeasures)))
 
 
-        self.sanityCheck()
-
         if self.create:
             self.createTemplate()
 
@@ -475,10 +478,11 @@ class pipeline(cli.Application):
         if self.create and self.process and self.debug:
             self.post_debug()
 
-        if self.stats and (self.create or self.process or self.debug):
-            raise AttributeError('--stats option is for recomputing site statistics exclusively')
-        else:
-            self.showStat()
+        if self.stats:
+            if (self.create or self.process or self.debug):
+                raise AttributeError('--stats option is for recomputing site statistics exclusively')
+            else:
+                self.showStat()
 
         os.remove(configFile)
         
