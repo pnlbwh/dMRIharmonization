@@ -47,8 +47,8 @@ Table of Contents
    * [Debugging](#debugging)
       * [1. With the pipeline](#1-with-the-pipeline)
       * [2. Use seperately](#2-use-seperately)
-      * [3. Obtain site statistics](#3-obtain-site-statistics)
-      * [4. With a list of FA images](#4-with-a-list-of-fa-images)
+      * [3. With a list of FA images](#3-with-a-list-of-fa-images)
+      * [4. Recompute site statistics](#4-recompute-site-statistics)
    * [Travel heads](#travel-heads)
    * [Caveats/Issues](#caveatsissues)
       * [1. Template path](#1-template-path)
@@ -326,6 +326,10 @@ The `harmonization.py` cli takes in the following arguments that are explained b
 * [--template VALUE:str](#template)
 * [--travelHeads](#travel-heads)
 
+
+
+See [Template creation](#template-creation), [Data harmonization](#data-harmonization), and [Debugging](#debugging) for some sample commands. 
+A number of use cases can be found in [pipeline_test.sh](./lib/tests/pipeline_test.sh)
 
 
 # Tests
@@ -697,7 +701,66 @@ luxury of using `--create --process --debug` altogether. Instead, you would use 
 Follow instruction for [With a list of FA images](#3-with-a-list-of-fa-images) below:
 
 
-## 3. Obtain site statistics
+
+## 3. With a list of FA images
+
+The repository provides a more discrete discrete script for finding the goodness of harmonization. This is useful when 
+you have different sets of data for template creation and harmonization.
+
+`$ lib/tests/fa_skeleton_test.py --help`
+    
+    usage: fa_skeleton_test.py [-h] -i INPUT -s SITE -t TEMPLATE
+    
+    Warps diffusion measures (FA, MD, GFA) to template space and then to subject
+    space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      -i INPUT, --input INPUT
+                            a .txt/.csv file having one column for FA imgs, or two
+                            columns for (img,mask) pair, the latter list is what
+                            you used in/obtained from harmonization.pysee
+                            documentation for more details
+      -s SITE, --site SITE  site name for locating template FA and mask in
+                            tempalte directory
+      -t TEMPLATE, --template TEMPLATE
+                            template directory where Mean_{site}_FA.nii.gz and
+                            {site}_Mask.nii.gz is located
+
+This script does not depend of registration performed during the harmonization process. Rather, it performs all the 
+steps mentioned above ([Debugging: In details](#debugging)) and computes mean FA over skeleton across all subjects 
+in a site.
+
+    
+    # preprocessed reference
+    lib/tests/fa_skeleton_test.py \
+    --input test_data/ref_caselist.txt.modified \
+    --site REF \
+    --template test_data/template/    
+    
+    
+    # given target
+    lib/tests/fa_skeleton_test.py \
+    --input test_data/target_caselist.txt \
+    --site TAR \
+    --template test_data/template/
+    
+    
+    # harmonized target
+    lib/tests/fa_skeleton_test.py \
+    --input test_data/target_caselist.txt.modified.harmonized \
+    --site TAR \
+    --template test_data/template/ 
+    
+    
+See [## 4. Recompute site statistics](#4-recompute-site-statistics) (ii) below to understand the meaning of `.modified` and `.harmonized` suffixes.
+    
+
+**NOTE** It is advised not to use `--force` with debug. If you need to remove old files, do it manually. 
+See [Caveats](#caveats/issues) with `--force` [below](#4---force).
+
+
+## 4. Recompute site statistics
 
 Whether you have same or different sets of data for template creation and harmonization, you can obtain site statistics at a later time as follows:
 
@@ -720,35 +783,6 @@ comparing against the rest. Hence, the `.modified` suffix is there for `--ref_li
 So, there is no such suffix for `--tar_list`. Finally, as the name suggests, `.modified.harmonized` suffix is for harmonized data.
 
 
-
-## 4. With a list of FA images
-
-The repository provides a more discrete discrete script for finding the goodness of harmonization. 
-
-`$ lib/tests/fa_skeleton_test.py --help`
-    
-    usage: fa_skeleton_test.py [-h] -i INPUT -s SITE -t TEMPLATE
-    
-    Warps diffusion measures (FA, MD, GFA) to template space and then to subject
-    space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz
-    
-    optional arguments:
-      -h, --help            show this help message and exit
-      -i INPUT, --input INPUT
-                            input list of FA images
-      -s SITE, --site SITE  site name for locating template FA and mask in
-                            tempalte directory
-      -t TEMPLATE, --template TEMPLATE
-                            template directory where Mean_{site}_FA.nii.gz and
-                            {site}_Mask.nii.gz is located
-
-This script does not depend of registration performed during the harmonization process. Rather, it performs all the 
-steps mentioned above ([Debugging: In details](#debugging)) and computes mean FA over skeleton across all subjects 
-in a site.
-
-
-**NOTE** It is advised not to use `--force` with debug. If you need to remove old files, do it manually. 
-See [Caveats](#caveats/issues) with `--force` [below](#4---force).
 
 
 # Travel heads
