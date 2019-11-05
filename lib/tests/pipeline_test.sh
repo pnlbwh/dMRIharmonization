@@ -14,6 +14,14 @@
 # ===============================================================================
 
 
+EXIT()
+{
+    echo ''
+    echo $1
+    exit 1
+}    
+
+
 write_list()
 {
     CASELIST=$1
@@ -45,6 +53,9 @@ write_list connectom.txt
 write_list prisma.txt
 
 
+### Run pipeline and obtain statistics when same number of matched reference and target images are used in
+### tempalate creation and harmonization
+
 # run test
 ../../harmonization.py \
 --bvalMap 1000 \
@@ -55,5 +66,75 @@ write_list prisma.txt
 --ref_name CONNECTOM \
 --tar_name PRISMA \
 --nproc -1 \
---create --process --debug
+--create --process --debug || EXIT 'harmonization.py with --create --process --debug failed'
+
+# recompute statistics
+../../harmonization.py \
+--template ./template/ \
+--ref_list connectom.txt.modified \
+--tar_list prisma.txt \
+--harm_list prisma.txt.modified.harmonized \
+--ref_name CONNECTOM \
+--tar_name PRISMA \
+--stats || EXIT 'harmonization.py with --stats failed'
+# ===============================================================================================================
+
+
+
+# remove template folder so template is re-created during --process --debug block
+rm -rf template && \
+
+
+### Run pipeline and obtain statistics when small set of matched reference and target images are used in template creation
+### and a larger set (does not have to be mutually exclusive from the former) of target images are used in harmonization
+
+# --create and --debug block
+../../harmonization.py \
+--bvalMap 1000 \
+--resample 1.5x1.5x1.5 \
+--template ./template/ \
+--ref_list connectom.txt \
+--tar_list prisma.txt \
+--ref_name CONNECTOM \
+--tar_name PRISMA \
+--nproc -1 \
+--create --debug || EXIT 'harmonization.py with --create --debug failed'
+
+# --process and --debug block
+../../harmonization.py \
+--bvalMap 1000 \
+--resample 1.5x1.5x1.5 \
+--template ./template/ \
+--tar_list prisma.txt \
+--ref_name CONNECTOM \
+--tar_name PRISMA \
+--nproc -1 \
+--process --debug || EXIT 'harmonization.py with --process --debug failed'
+
+
+
+# compute statistics
+../fa_skeleton_test.py -i connectom.txt.modified \
+-s CONNECTOM -t template/ || EXIT 'fa_skeleton_test.py failed for modified reference'
+
+../fa_skeleton_test.py -i prisma.txt \
+-s PRISMA -t template/ || EXIT 'fa_skeleton_test.py failed for given target'
+
+../fa_skeleton_test.py -i prisma.txt.modified.harmonized \
+-s PRISMA -t template/ || EXIT 'fa_skeleton_test.py failed for harmonized target'
+
+
+
+# now that all files are created, recompute statistics
+../../harmonization.py \
+--template ./template/ \
+--ref_list connectom.txt.modified \
+--tar_list prisma.txt \
+--harm_list prisma.txt.modified.harmonized \
+--ref_name CONNECTOM \
+--tar_name PRISMA \
+--stats || EXIT 'harmonization.py with --stats failed'
+
+# ===============================================================================================================
+
 
