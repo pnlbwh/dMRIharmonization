@@ -27,7 +27,7 @@ config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures= [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
-travelHeads= bool(config['DEFAULT']['travelHeads'])
+travelHeads= int(config['DEFAULT']['travelHeads'])
 
 def applyXform(inImg, refImg, warp, trans, outImg):
 
