@@ -109,8 +109,9 @@ def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
     templateAffine = templateHdr.get_best_affine()
     save_nifti(morphed_mask_name, morphed_mask.astype('uint8'), templateAffine, templateHdr)
 
-    imgData= []
+
     for dm in diffusionMeasures:
+        imgData= []
         for imgPath in imgs:
             prefix = os.path.basename(imgPath).split('.')[0]
             imgData.append(load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0])

@@ -255,9 +255,9 @@ class pipeline(cli.Application):
         templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target)
 
         print('rish_statistics mean, std(L{i}) calculation of reference site')
-        rish_stat(self.reference, imgs, self.templatePath, templateHdr)
+        rish_stat(self.reference, refImgs, self.templatePath, templateHdr)
         print('rish_statistics mean, std(L{i}) calculation of target site')
-        rish_stat(self.target, imgs, self.templatePath, templateHdr)
+        rish_stat(self.target, targetImgs, self.templatePath, templateHdr)
 
         print('calculating scale map for diffusionMeasures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
