@@ -18,6 +18,7 @@ from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.io import loadmat, savemat
 from normalize import normalize_data, find_b0
 from util import *
+from subprocess import Popen
 
 FILEDIR= os.path.dirname(os.path.abspath(__file__))
 
@@ -28,7 +29,9 @@ def resize_spm(lowResImg, inPrefix):
     savemat(dataFile, {'lowResImg': lowResImg})
 
     # call MATLAB_Runtime based spm bspline interpolation
-    check_call([os.path.join(FILEDIR,'spm_bspline_exec', 'bspline')+' '+inPrefix], shell= True)
+    cmd= (' ').join([os.path.join(FILEDIR,'spm_bspline_exec', 'bspline'), inPrefix])
+    p= Popen(cmd, shell= True)
+    p.wait()
 
     highResImg= np.nan_to_num(loadmat(inPrefix+'_resampled.mat')['highResImg'])
 
