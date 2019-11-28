@@ -361,9 +361,17 @@ class pipeline(cli.Application):
     def showStat(self):
 
         from debug_fa import analyzeStat
+        from datetime import datetime
 
         print('\n\nPrinting statistics :\n\n')
-
+        
+        # save statistics for future
+        statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
+        f= open(statFile,'w')
+        stdout= sys.stdout
+        sys.stdout= f
+        
+        print(datetime.now().strftime('%c'),'\n')
         print(f'{self.reference} site: ')
         ref_mean = analyzeStat(self.ref_csv, self.templatePath)
         printStat(ref_mean, self.ref_csv)
@@ -375,6 +383,15 @@ class pipeline(cli.Application):
         print(f'{self.target} site after harmonization: ')
         target_mean_after = analyzeStat(self.harm_csv, self.templatePath) 
         printStat(target_mean_after, self.harm_csv)
+        
+        f.close()
+        sys.stdout= stdout
+
+        # print statistics on console        
+        with open(statFile) as f:
+            print(f.read())
+        
+        print('\nThe statistics are also saved in ', statFile)
 
 
     def sanityCheck(self):
