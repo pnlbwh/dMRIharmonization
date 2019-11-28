@@ -18,7 +18,6 @@ from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.io import loadmat, savemat
 from normalize import normalize_data, find_b0
 from util import *
-from subprocess import Popen
 
 FILEDIR= os.path.dirname(os.path.abspath(__file__))
 
@@ -29,8 +28,7 @@ def resize_spm(lowResImg, inPrefix):
     savemat(dataFile, {'lowResImg': lowResImg})
 
     # call MATLAB_Runtime based spm bspline interpolation
-    cmd= (' ').join([os.path.join(FILEDIR,'spm_bspline_exec', 'bspline'), inPrefix])
-    p= Popen(cmd, shell= True)
+    p= Popen((' ').join([os.path.join(FILEDIR,'spm_bspline_exec', 'bspline'), inPrefix]), shell=True)
     p.wait()
 
     highResImg= np.nan_to_num(loadmat(inPrefix+'_resampled.mat')['highResImg'])
@@ -136,7 +134,9 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
     # unring the b0
     highResB0Path = lowResImgPath.split('.')[0] + '_resampled_bse.nii.gz'
-    check_call(['unring.a64', highResB0PathTmp, highResB0Path])
+    p= Popen((' ').join(['unring.a64', highResB0PathTmp, highResB0Path]), shell= True)
+    p.wait()
+
     check_call(['rm', highResB0PathTmp])
     b0_gibs = load(highResB0Path).get_data()
     np.nan_to_num(b0_gibs).clip(min= 0., out= b0_gibs) # using min= 1. is unnecessary

@@ -32,20 +32,22 @@ n_zero = int(config['DEFAULT']['N_zero'])
 def antsReg(img, mask, mov, outPrefix):
 
     if mask:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
                                '-o', outPrefix,
                                '-e', '123456']), shell= True)
+        p.wait()
     else:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
                                '-o', outPrefix,
                                '-e', '123456']), shell= True)
+        p.wait()
 
 def antsApply(templatePath, directory, prefix):
 

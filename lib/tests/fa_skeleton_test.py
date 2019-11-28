@@ -42,20 +42,22 @@ def printStat(ref_mean, imgs):
 def antsReg(img, mask, mov, outPrefix, n_thread=1):
 
     if mask:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
                                '-n', str(n_thread),
                                '-o', outPrefix]), shell= True)
+        p.wait()
     else:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
                                '-n', str(n_thread),
                                '-o', outPrefix]), shell= True)
+        p.wait()
 
 
 def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):

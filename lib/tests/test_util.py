@@ -16,7 +16,7 @@ from os import mkdir
 import sys
 from shutil import rmtree, copyfile
 import unittest
-from subprocess import check_call
+from subprocess import check_call, Popen
 
 FILEDIR= abspath(dirname(__file__))
 LIBDIR= dirname(FILEDIR)

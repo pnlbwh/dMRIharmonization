@@ -13,7 +13,7 @@
 
 import os, shutil, configparser, sys
 import numpy as np
-from subprocess import check_call
+from subprocess import check_call, Popen
 
 import warnings
 with warnings.catch_warnings():
