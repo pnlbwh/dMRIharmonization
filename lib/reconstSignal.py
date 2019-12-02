@@ -168,7 +168,7 @@ def reconst(imgPath, maskPath, moving, templatePath, preFlag):
     # provide full sampled shm_coeff, qb_model.B
     # provide imgPath header
     img = load(imgPath)
-    b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath)
+    b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath, nargout=3)
 
     directory = os.path.dirname(imgPath)
     inPrefix = imgPath.split('.')[0]

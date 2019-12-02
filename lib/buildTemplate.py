@@ -22,7 +22,6 @@ from util import *
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-# config.read(os.path.join(SCRIPTDIR,'config.ini'))
 config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
@@ -83,7 +82,8 @@ def createAntsCaselist(imgs, file):
 
 
 def antsMult(caselist, outPrefix):
-
+    
+    N_core=os.getenv('TEMPLATE_CONSTRUCT_CORE')
     check_call((' ').join([os.path.join(SCRIPTDIR, 'antsMultivariateTemplateConstruction2_fixed_random_seed.sh'),
                            '-d', '3',
                            '-g', '0.2',
@@ -91,7 +91,7 @@ def antsMult(caselist, outPrefix):
                            '-t', "BSplineSyN[0.1,26,0]",
                            '-r', '1',
                            '-c', '2',
-                           '-j', str(N_proc),
+                           '-j', str(N_core) if N_core else str(N_proc),
                            '-f', '8x4x2x1',
                            '-o', outPrefix,
                            caselist]), shell= True)
