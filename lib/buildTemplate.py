@@ -211,6 +211,7 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         per_diff_smooth= []
         scale= []
         if travelHeads:
+            print('Using travelHeads for computing scale maps')
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
                 ref= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
