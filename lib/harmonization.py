@@ -232,7 +232,7 @@ class pipeline(cli.Application):
         # ATTN: antsMultivariateTemplateConstruction2.sh requires absolute path for caselist
         antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
 
-        # # load templateHdr
+        # load templateHdr
         templateHdr= load(os.path.join(self.templatePath, 'template0.nii.gz')).header
 
 
@@ -244,9 +244,9 @@ class pipeline(cli.Application):
         pool.close()
         pool.join()
 
-        print('dti statistics: mean, std(FA, MD) calculation of reference site')
+        print('dti statistics: mean, std calculation of reference site')
         refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateHdr)
-        print('dti statistics: mean, std(FA, MD) calculation of target site')
+        print('dti statistics: mean, std calculation of target site')
         targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateHdr)
 
         print('masking dti statistics of reference site')
