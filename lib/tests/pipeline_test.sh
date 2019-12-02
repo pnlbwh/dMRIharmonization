@@ -86,6 +86,10 @@ rm -rf template && \
 
 ### Run pipeline and obtain statistics when small set of matched reference and target images are used in template creation
 ### and a larger set (does not have to be mutually exclusive from the former) of target images are used in harmonization
+
+# test the following advanced parameter
+export TEMPLATE_CONSTRUCT_CORES=32
+
 # --create and --debug block
 ../../harmonization.py \
 --bvalMap 1000 \
