@@ -183,6 +183,7 @@ def stat_calc(ref, target, mask):
     np.nan_to_num(per_diff).clip(max=100., min=-100., out= per_diff)
     per_diff_smooth= smooth(per_diff)
     scale= ref/(target+eps)
+    scale.clip(min=0., out=scale)
     # scale.clip(max=10., min= 0., out= scale)
 
     return (delta, per_diff, per_diff_smooth, scale)
@@ -211,7 +212,7 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         per_diff_smooth= []
         scale= []
         if travelHeads:
-            print('Using travelHeads for computing scale maps')
+            print('Using travelHeads for computing scale maps of',dm)
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
                 ref= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
