@@ -342,9 +342,6 @@ class pipeline(cli.Application):
 
         from debug_fa import sub2tmp2mni
 
-        refImgs, _ = read_imgs_masks(self.ref_csv)
-        targetImgs, _= read_imgs_masks(self.target_csv)
-
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
 
