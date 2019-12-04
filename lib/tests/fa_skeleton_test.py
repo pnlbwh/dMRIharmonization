@@ -108,8 +108,8 @@ def sub2tmp2mni(templatePath, siteName, faImgs, N_proc):
     pool= multiprocessing.Pool(N_proc)
     res=[]
     for imgPath in faImgs:
-            res.append(pool.apply_async(func= register_subject,
-                       args= (imgPath, warp2mni, trans2mni, templatePath, siteName, )))
+        res.append(pool.apply_async(func= register_subject,
+                   args= (imgPath, warp2mni, trans2mni, templatePath, siteName, )))
 
     mniFAimgs= [r.get() for r in res]
 

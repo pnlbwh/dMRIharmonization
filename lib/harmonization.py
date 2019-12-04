@@ -364,7 +364,7 @@ class pipeline(cli.Application):
         
         # save statistics for future
         statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
-        f= open(statFile,'w')
+        f= open(statFile,'a')
         stdout= sys.stdout
         sys.stdout= f
         
