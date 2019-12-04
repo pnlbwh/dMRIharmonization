@@ -143,8 +143,8 @@ def main():
     and then to MNI space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz''')
     parser.add_argument('-i', '--input', type=str, required=True,
         help='a .txt/.csv file having one column for FA imgs, '
-             'or two columns for (img,mask) pair, the latter list is what you used in/obtained from harmonization.py'
-             'see documentation for more details')
+             'or two columns for (img,mask) pair, the latter list is what you used in/obtained from harmonization.py. '
+             'See documentation for more details')
     parser.add_argument('-s', '--site', type= str, required=True,
                         help='site name for locating template FA and mask in tempalte directory')
     parser.add_argument('-t', '--template', type=str, required=True,
