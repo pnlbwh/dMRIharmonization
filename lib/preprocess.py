@@ -23,7 +23,6 @@ from rish import rish
 
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-# config.read(os.path.join(SCRIPTDIR,'config.ini'))
 config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 
 N_shm = int(config['DEFAULT']['N_shm'])
@@ -55,24 +54,18 @@ def read_caselist(file):
     return (imgs, masks)
 
 
-def dti_harm(imgPath, maskPath, nargout=0):
+def dti_harm(imgPath, maskPath):
 
     directory = os.path.dirname(imgPath)
     inPrefix = imgPath.split('.')[0]
     prefix = os.path.split(inPrefix)[-1]
 
     outPrefix = os.path.join(directory, 'dti', prefix)
-
-    # if the dti output exists with the same prefix, don't dtifit again
-    if not os.path.exists(outPrefix+'_FA.nii.gz'):
-        dti(imgPath, maskPath, inPrefix, outPrefix)
+    dti(imgPath, maskPath, inPrefix, outPrefix)
 
     outPrefix = os.path.join(directory, 'harm', prefix)
-    b0, shm_coeff, qb_model= rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
+    rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
     
-    if nargout==3:
-       return (b0, shm_coeff, qb_model)
-
 
 # convert NRRD to NIFTI on the fly
 def nrrd2nifti(imgPath):

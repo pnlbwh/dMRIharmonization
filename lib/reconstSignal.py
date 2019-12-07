@@ -18,6 +18,7 @@ from util import *
 from buildTemplate import applyXform
 from local_med_filter import local_med_filter
 from preprocess import dti_harm, preprocessing
+from rish import rish
 
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
@@ -164,14 +165,14 @@ def reconst(imgPath, maskPath, moving, templatePath, preFlag):
     if preFlag:
         imgPath, maskPath = preprocessing(imgPath, maskPath)
 
-    # provide full sampled shm_coeff, qb_model.B
-    # provide imgPath header
     img = load(imgPath)
-    b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath, nargout=3)
 
     directory = os.path.dirname(imgPath)
     inPrefix = imgPath.split('.')[0]
-    prefix = os.path.split(inPrefix)[-1]
+    prefix = os.path.split(inPrefix)[-1] 
+    outPrefix = os.path.join(directory, 'harm', prefix) 
+    b0, shm_coeff, qb_model = rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
+
 
     print(f'Registering template FA to {imgPath} space ...')
     outPrefix = os.path.join(directory, 'harm', 'ToSubjectSpace_' + prefix)
