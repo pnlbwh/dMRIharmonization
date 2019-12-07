@@ -244,9 +244,9 @@ class pipeline(cli.Application):
         pool.close()
         pool.join()
 
-        print('dti statistics: mean, std calculation of reference site')
+        print('calculating dti statistics i.e. mean, std for reference site')
         refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateHdr)
-        print('dti statistics: mean, std calculation of target site')
+        print('calculating dti statistics i.e. mean, std for target site')
         targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateHdr)
 
         print('masking dti statistics of reference site')
@@ -254,16 +254,16 @@ class pipeline(cli.Application):
         print('masking dti statistics of target site')
         templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target)
 
-        print('rish_statistics mean, std(L{i}) calculation of reference site')
+        print('calculating rish_statistics i.e. mean, std calculation for reference site')
         rish_stat(self.reference, refImgs, self.templatePath, templateHdr)
-        print('rish_statistics mean, std(L{i}) calculation of target site')
+        print('calculating rish_statistics i.e. mean, std calculation for target site')
         rish_stat(self.target, targetImgs, self.templatePath, templateHdr)
 
-        print('calculating scale map for diffusionMeasures')
+        print('calculating templates for diffusionMeasures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
                         templateMask, self.diffusionMeasures)
 
-        print('calculating scale map for rishFeatures')
+        print('calculating templates for rishFeatures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
                         templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)])
 
