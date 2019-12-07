@@ -47,7 +47,7 @@ def dti(imgPath, maskPath, inPrefix, outPrefix, tool='FSL'):
               ] & FG
 
 
-    gfa_vol = gfa(masked_vol)
+    gfa_vol = np.nan_to_num(gfa(masked_vol))
     save_nifti(outPrefix + '_GFA.nii.gz', gfa_vol, vol.affine, vol.header)
 
 
