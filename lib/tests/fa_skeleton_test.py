@@ -180,12 +180,30 @@ def main():
 
     # register and obtain *_InMNI_FA.nii.gz
     mniFAimgs= sub2tmp2mni(templatePath, siteName, faImgs, N_proc)
+  
+    
+    # save statistics for future
+    statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
+    f= open(statFile,'a')
+    stdout= sys.stdout
+    sys.stdout= f
+
+    print(datetime.now().strftime('%c'),'\n')
 
     # pass *_InMNI_FA.nii.gz list to analyzeStat
     site_means= analyzeStat(mniFAimgs)
     print(f'{siteName} site: ')
     printStat(site_means, mniFAimgs)
 
+    f.close()
+    sys.stdout= stdout
+
+    # print statistics on console
+    print('')
+    with open(statFile) as f:
+        print(f.read())
+
+    print('\nThe statistics are also saved in ', statFile)
 
 if __name__ == '__main__':
     main()
