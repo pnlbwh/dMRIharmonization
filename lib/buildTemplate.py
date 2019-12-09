@@ -22,7 +22,6 @@ from util import *
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-# config.read(os.path.join(SCRIPTDIR,'config.ini'))
 config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
@@ -83,7 +82,8 @@ def createAntsCaselist(imgs, file):
 
 
 def antsMult(caselist, outPrefix):
-
+    
+    N_core=os.getenv('TEMPLATE_CONSTRUCT_CORES')
     check_call((' ').join([os.path.join(SCRIPTDIR, 'antsMultivariateTemplateConstruction2_fixed_random_seed.sh'),
                            '-d', '3',
                            '-g', '0.2',
@@ -91,7 +91,7 @@ def antsMult(caselist, outPrefix):
                            '-t', "BSplineSyN[0.1,26,0]",
                            '-r', '1',
                            '-c', '2',
-                           '-j', str(N_proc),
+                           '-j', str(N_core) if N_core else str(N_proc),
                            '-f', '8x4x2x1',
                            '-o', outPrefix,
                            caselist]), shell= True)
@@ -183,7 +183,6 @@ def stat_calc(ref, target, mask):
     np.nan_to_num(per_diff).clip(max=100., min=-100., out= per_diff)
     per_diff_smooth= smooth(per_diff)
     scale= ref/(target+eps)
-    scale.clip(max=10., min= 0., out= scale)
 
     return (delta, per_diff, per_diff_smooth, scale)
 
@@ -211,6 +210,7 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         per_diff_smooth= []
         scale= []
         if travelHeads:
+            print('Using travelHeads for computing templates of',dm)
             for refImg, targetImg in zip(refImgs, targetImgs):
                 prefix = os.path.basename(refImg).split('.')[0]
                 ref= load_nifti(os.path.join(templatePath, f'{prefix}_Warped{dm}.nii.gz'))[0]
@@ -246,8 +246,9 @@ def difference_calc(refSite, targetSite, refImgs, targetImgs,
         save_nifti(os.path.join(templatePath, f'PercentageDiff_{dm}smooth.nii.gz'),
                    np.mean(per_diff_smooth, axis= 0), templateAffine, templateHdr)
 
-        save_nifti(os.path.join(templatePath, f'Scale_{dm}.nii.gz'),
-                   np.sqrt(np.mean(scale, axis= 0)), templateAffine, templateHdr)
+        if 'L' in dm:
+            save_nifti(os.path.join(templatePath, f'Scale_{dm}.nii.gz'),
+                       np.sqrt(np.mean(scale, axis= 0)), templateAffine, templateHdr)
 
 
 

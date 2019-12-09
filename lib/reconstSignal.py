@@ -18,11 +18,11 @@ from util import *
 from buildTemplate import applyXform
 from local_med_filter import local_med_filter
 from preprocess import dti_harm, preprocessing
+from rish import rish
 
 eps= 2.2204e-16
 SCRIPTDIR= os.path.dirname(__file__)
 config = configparser.ConfigParser()
-# config.read(os.path.join(SCRIPTDIR,'config.ini'))
 config.read(f'/tmp/harm_config_{os.getpid()}.ini')
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
@@ -32,20 +32,22 @@ n_zero = int(config['DEFAULT']['N_zero'])
 def antsReg(img, mask, mov, outPrefix):
 
     if mask:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
                                '-o', outPrefix,
                                '-e', '123456']), shell= True)
+        p.wait()
     else:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
                                '-o', outPrefix,
                                '-e', '123456']), shell= True)
+        p.wait()
 
 def antsApply(templatePath, directory, prefix):
 
@@ -163,14 +165,14 @@ def reconst(imgPath, maskPath, moving, templatePath, preFlag):
     if preFlag:
         imgPath, maskPath = preprocessing(imgPath, maskPath)
 
-    # provide full sampled shm_coeff, qb_model.B
-    # provide imgPath header
     img = load(imgPath)
-    b0, shm_coeff, qb_model = dti_harm(imgPath, maskPath)
 
     directory = os.path.dirname(imgPath)
     inPrefix = imgPath.split('.')[0]
-    prefix = os.path.split(inPrefix)[-1]
+    prefix = os.path.split(inPrefix)[-1] 
+    outPrefix = os.path.join(directory, 'harm', prefix) 
+    b0, shm_coeff, qb_model = rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
+
 
     print(f'Registering template FA to {imgPath} space ...')
     outPrefix = os.path.join(directory, 'harm', 'ToSubjectSpace_' + prefix)

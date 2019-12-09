@@ -232,7 +232,7 @@ class pipeline(cli.Application):
         # ATTN: antsMultivariateTemplateConstruction2.sh requires absolute path for caselist
         antsMult(os.path.abspath(antsMultCaselist), self.templatePath)
 
-        # # load templateHdr
+        # load templateHdr
         templateHdr= load(os.path.join(self.templatePath, 'template0.nii.gz')).header
 
 
@@ -244,9 +244,9 @@ class pipeline(cli.Application):
         pool.close()
         pool.join()
 
-        print('dti statistics: mean, std(FA, MD) calculation of reference site')
+        print('calculating dti statistics i.e. mean, std for reference site')
         refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateHdr)
-        print('dti statistics: mean, std(FA, MD) calculation of target site')
+        print('calculating dti statistics i.e. mean, std for target site')
         targetMaskPath= dti_stat(self.target, targetImgs, targetMasks, self.templatePath, templateHdr)
 
         print('masking dti statistics of reference site')
@@ -254,16 +254,16 @@ class pipeline(cli.Application):
         print('masking dti statistics of target site')
         templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target)
 
-        print('rish_statistics mean, std(L{i}) calculation of reference site')
+        print('calculating rish_statistics i.e. mean, std calculation for reference site')
         rish_stat(self.reference, refImgs, self.templatePath, templateHdr)
-        print('rish_statistics mean, std(L{i}) calculation of target site')
+        print('calculating rish_statistics i.e. mean, std calculation for target site')
         rish_stat(self.target, targetImgs, self.templatePath, templateHdr)
 
-        print('calculating scale map for diffusionMeasures')
+        print('calculating templates for diffusionMeasures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
                         templateMask, self.diffusionMeasures)
 
-        print('calculating scale map for rishFeatures')
+        print('calculating templates for rishFeatures')
         difference_calc(self.reference, self.target, refImgs, targetImgs, self.templatePath, templateHdr,
                         templateMask, [f'L{i}' for i in range(0, self.N_shm+1, 2)])
 
@@ -342,9 +342,6 @@ class pipeline(cli.Application):
 
         from debug_fa import sub2tmp2mni
 
-        refImgs, _ = read_imgs_masks(self.ref_csv)
-        targetImgs, _= read_imgs_masks(self.target_csv)
-
         print('\n\n Reference site')
         sub2tmp2mni(self.templatePath, self.reference, self.ref_csv, ref= True)
 
@@ -361,9 +358,17 @@ class pipeline(cli.Application):
     def showStat(self):
 
         from debug_fa import analyzeStat
+        from datetime import datetime
 
         print('\n\nPrinting statistics :\n\n')
-
+        
+        # save statistics for future
+        statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
+        f= open(statFile,'a')
+        stdout= sys.stdout
+        sys.stdout= f
+        
+        print(datetime.now().strftime('%c'),'\n')
         print(f'{self.reference} site: ')
         ref_mean = analyzeStat(self.ref_csv, self.templatePath)
         printStat(ref_mean, self.ref_csv)
@@ -375,6 +380,15 @@ class pipeline(cli.Application):
         print(f'{self.target} site after harmonization: ')
         target_mean_after = analyzeStat(self.harm_csv, self.templatePath) 
         printStat(target_mean_after, self.harm_csv)
+        
+        f.close()
+        sys.stdout= stdout
+
+        # print statistics on console        
+        with open(statFile) as f:
+            print(f.read())
+        
+        print('\nThe statistics are also saved in ', statFile)
 
 
     def sanityCheck(self):

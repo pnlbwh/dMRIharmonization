@@ -55,7 +55,6 @@ write_list prisma.txt
 
 ### Run pipeline and obtain statistics when same number of matched reference and target images are used in
 ### tempalate creation and harmonization
-
 # run test
 ../../harmonization.py \
 --bvalMap 1000 \
@@ -88,6 +87,9 @@ rm -rf template && \
 ### Run pipeline and obtain statistics when small set of matched reference and target images are used in template creation
 ### and a larger set (does not have to be mutually exclusive from the former) of target images are used in harmonization
 
+# test the following advanced parameter
+export TEMPLATE_CONSTRUCT_CORES=6
+
 # --create and --debug block
 ../../harmonization.py \
 --bvalMap 1000 \
@@ -97,6 +99,7 @@ rm -rf template && \
 --tar_list prisma.txt \
 --ref_name CONNECTOM \
 --tar_name PRISMA \
+--travelHeads \
 --nproc -1 \
 --create --debug || EXIT 'harmonization.py with --create --debug failed'
 

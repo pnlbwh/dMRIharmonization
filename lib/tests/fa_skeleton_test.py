@@ -42,20 +42,22 @@ def printStat(ref_mean, imgs):
 def antsReg(img, mask, mov, outPrefix, n_thread=1):
 
     if mask:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-x', mask,
                                '-m', mov,
                                '-n', str(n_thread),
                                '-o', outPrefix]), shell= True)
+        p.wait()
     else:
-        check_call((' ').join(['antsRegistrationSyNQuick.sh',
+        p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
                                '-d', '3',
                                '-f', img,
                                '-m', mov,
                                '-n', str(n_thread),
                                '-o', outPrefix]), shell= True)
+        p.wait()
 
 
 def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
@@ -106,8 +108,8 @@ def sub2tmp2mni(templatePath, siteName, faImgs, N_proc):
     pool= multiprocessing.Pool(N_proc)
     res=[]
     for imgPath in faImgs:
-            res.append(pool.apply_async(func= register_subject,
-                       args= (imgPath, warp2mni, trans2mni, templatePath, siteName, )))
+        res.append(pool.apply_async(func= register_subject,
+                   args= (imgPath, warp2mni, trans2mni, templatePath, siteName, )))
 
     mniFAimgs= [r.get() for r in res]
 
@@ -141,8 +143,8 @@ def main():
     and then to MNI space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz''')
     parser.add_argument('-i', '--input', type=str, required=True,
         help='a .txt/.csv file having one column for FA imgs, '
-             'or two columns for (img,mask) pair, the latter list is what you used in/obtained from harmonization.py'
-             'see documentation for more details')
+             'or two columns for (img,mask) pair, the latter list is what you used in/obtained from harmonization.py. '
+             'See documentation for more details')
     parser.add_argument('-s', '--site', type= str, required=True,
                         help='site name for locating template FA and mask in tempalte directory')
     parser.add_argument('-t', '--template', type=str, required=True,
@@ -178,12 +180,30 @@ def main():
 
     # register and obtain *_InMNI_FA.nii.gz
     mniFAimgs= sub2tmp2mni(templatePath, siteName, faImgs, N_proc)
+  
+    
+    # save statistics for future
+    statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
+    f= open(statFile,'a')
+    stdout= sys.stdout
+    sys.stdout= f
+
+    print(datetime.now().strftime('%c'),'\n')
 
     # pass *_InMNI_FA.nii.gz list to analyzeStat
     site_means= analyzeStat(mniFAimgs)
     print(f'{siteName} site: ')
     printStat(site_means, mniFAimgs)
 
+    f.close()
+    sys.stdout= stdout
+
+    # print statistics on console
+    print('')
+    with open(statFile) as f:
+        print(f.read())
+
+    print('\nThe statistics are also saved in ', statFile)
 
 if __name__ == '__main__':
     main()

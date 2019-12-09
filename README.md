@@ -449,6 +449,12 @@ is advisable to leave out at least two cores for other processes to run smoothly
 
 **NOTE** See [Caveats/Issues](#caveatsissues) that may occur while using many processors in parallel.
 
+Furthermore, you can define the environment variable `TEMPLATE_CONSTRUCT_CORES` to use a different number of processors 
+for `antsMultivariateTemplateConstruction2.sh` independent of `--nproc` used for rest of the processes in *dMRIharmonization*:
+
+    export TEMPLATE_CONSTRUCT_CORES=32
+
+
 # Order of spherical harmonics
 
 RISH features are derived from spherical harmonic coefficients. The order of spherical harmonic coefficients you can use 
