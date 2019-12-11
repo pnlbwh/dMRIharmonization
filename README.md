@@ -191,9 +191,9 @@ See details about installation [here](https://www.mathworks.com/help/compiler/in
 After successful installation, you should see a suggestion about editing your LD_LIBRARY_PATH. 
 You should save the suggestion in a file `env.sh`.
 
-    echo "/path/to/v92/runtime/glnxa64:/path/to/v92/bin/glnxa64:/path/to/v92/sys/os/glnxa64:/path/to/v92/opengl/lib/glnxa64:" > env.sh
+    echo "export LD_LIBRARY_PATH=/path/to/v92/runtime/glnxa64:/path/to/v92/bin/glnxa64:/path/to/v92/sys/os/glnxa64:/path/to/v92/sys/opengl/lib/glnxa64:\${LD_LIBRARY_PATH}" > env.sh
 
-Then, every time you run dMRIharmonization, you can just source the `env.sh` for your LD_LIBRARY_PATH to be updated.
+Then, every time you run dMRIharmonization, you can just `source /path/to/env.sh` for your LD_LIBRARY_PATH to be updated.
 
 
 ### unringing
