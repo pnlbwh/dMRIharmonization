@@ -17,6 +17,7 @@ import sys
 from shutil import rmtree, copyfile
 import unittest
 from subprocess import check_call, Popen
+from datetime import datetime
 
 FILEDIR= abspath(dirname(__file__))
 LIBDIR= dirname(FILEDIR)

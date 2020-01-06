@@ -183,7 +183,7 @@ def main():
   
     
     # save statistics for future
-    statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
+    statFile= pjoin(templatePath, 'meanFAstat.txt') 
     f= open(statFile,'a')
     stdout= sys.stdout
     sys.stdout= f
