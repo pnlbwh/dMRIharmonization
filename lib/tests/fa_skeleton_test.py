@@ -64,7 +64,7 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = dirname(imgPath)
-    outPrefix = pjoin(templatePath, imgPath.split('.')[0]) # should have _FA a the end
+    outPrefix = pjoin(templatePath, imgPath.split('.nii')[0]) # should have _FA a the end
     prefix = psplit(outPrefix)[-1].replace('_FA', '')
 
     dmTmp = pjoin(templatePath, f'Mean_{siteName}_FA.nii.gz')
@@ -165,7 +165,7 @@ def main():
 
         for imgPath in imgs:
             directory = dirname(imgPath)
-            prefix = basename(imgPath).split('.')[0]
+            prefix = basename(imgPath).split('.nii')[0]
             faImg= pjoin(directory, 'dti', prefix+ '_FA.nii.gz')
             if not isfile(faImg):
                 raise FileNotFoundError(f'{faImg} not found. Did you run \"--create --debug\" and \"--process --debug\" before?')

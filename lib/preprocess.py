@@ -57,7 +57,7 @@ def read_caselist(file):
 def dti_harm(imgPath, maskPath):
 
     directory = os.path.dirname(imgPath)
-    inPrefix = imgPath.split('.')[0]
+    inPrefix = imgPath.split('.nii')[0]
     prefix = os.path.split(inPrefix)[-1]
 
     outPrefix = os.path.join(directory, 'dti', prefix)
@@ -70,13 +70,15 @@ def dti_harm(imgPath, maskPath):
 # convert NRRD to NIFTI on the fly
 def nrrd2nifti(imgPath):
 
-    if imgPath.endswith('.nrrd') or imgPath.endswith('.nhdr'):
-        niftiImgPrefix= imgPath.split('.')[0]
-        nifti_write(imgPath, niftiImgPrefix)
-
-        return niftiImgPrefix+'.nii.gz'
+    if imgPath.endswith('.nrrd'):
+        niftiImgPrefix= imgPath.split('.nrrd')[0]
+    elif imgPath.endswith('.nhdr'):
+        niftiImgPrefix= imgPath.split('.nhdr')[0]
     else:
         return imgPath
+
+    nifti_write(imgPath, niftiImgPrefix)
+    return niftiImgPrefix+'.nii.gz'
 
 
 def preprocessing(imgPath, maskPath):
@@ -94,7 +96,7 @@ def preprocessing(imgPath, maskPath):
 
     lowResImg = applymask(lowResImg, lowResMask)
 
-    inPrefix = imgPath.split('.')[0]
+    inPrefix = imgPath.split('.nii')[0]
 
     bvals, _ = read_bvals_bvecs(inPrefix + '.bval', None)
 
@@ -106,7 +108,7 @@ def preprocessing(imgPath, maskPath):
         lowResImg, _ = denoising(lowResImg, lowResMask)
         suffix = '_denoised'
         if debug:
-            outPrefix= imgPath.split('.')[0]+suffix
+            outPrefix= imgPath.split('.nii')[0]+suffix
             save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine, lowResImgHdr)
             shutil.copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
             shutil.copyfile(inPrefix + '.bval', inPrefix + '.bval')
@@ -118,7 +120,7 @@ def preprocessing(imgPath, maskPath):
         lowResImg, bvals = remapBval(lowResImg, lowResMask, bvals, bvalMap)
         suffix = '_bmapped'
         if debug:
-            outPrefix= imgPath.split('.')[0]+suffix
+            outPrefix= imgPath.split('.nii')[0]+suffix
             save_nifti(outPrefix+'.nii.gz', lowResImg, lowRes.affine, lowResImgHdr)
             shutil.copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
             write_bvals(outPrefix + '.bval', bvals)

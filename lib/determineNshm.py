@@ -55,7 +55,7 @@ def verifyNshmForAll(csvFile, N_shm):
 
     for imgPath in read_imgs_masks(csvFile)[0]:
         directory = dirname(imgPath)
-        prefix = basename(imgPath).split('.')[0]
+        prefix = basename(imgPath).split('.nii')[0]
         bvalFile = pjoin(directory, prefix + '.bval')
         verifySingleShellNess(bvalFile)
         verifyNshm(N_shm, bvalFile)

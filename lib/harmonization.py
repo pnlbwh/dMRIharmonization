@@ -446,7 +446,7 @@ class pipeline(cli.Application):
                     ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
 
                 directory= os.path.dirname(ref_nshm_img)
-                prefix= os.path.basename(ref_nshm_img).split('.')[0]
+                prefix= os.path.basename(ref_nshm_img).split('.nii')[0]
                 bvalFile= os.path.join(directory, prefix+'.bval')
                 self.N_shm, _= determineNshm(bvalFile)
 
