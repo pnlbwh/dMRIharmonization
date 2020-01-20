@@ -36,7 +36,7 @@ class TestDenoise(unittest.TestCase):
 
         print('Denoising ', imgPath)
         dwiNew, _= denoising(dwi.get_data(), mask.get_data())
-        outPrefix = imgPath.split('.')[0] + '_denoised'
+        outPrefix = imgPath.split('.nii')[0] + '_denoised'
         save_nifti(outPrefix + '.nii.gz', dwiNew, dwi.affine, dwi.header)
         copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
         copyfile(inPrefix + '.bval', outPrefix + '.bval')

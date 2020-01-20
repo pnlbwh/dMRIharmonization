@@ -31,7 +31,7 @@ def register_reference(imgPath, warp2mni, trans2mni, templatePath):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
-    inPrefix = imgPath.split('.')[0]
+    inPrefix = imgPath.split('.nii')[0]
     prefix = os.path.split(inPrefix)[-1]
 
     for dm in diffusionMeasures:
@@ -56,7 +56,7 @@ def register_target(imgPath, templatePath):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
-    inPrefix = imgPath.split('.')[0]
+    inPrefix = imgPath.split('.nii')[0]
     prefix = os.path.split(inPrefix)[-1]
 
     dmImg = os.path.join(directory, 'dti', prefix + f'_FA.nii.gz')
@@ -86,7 +86,7 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
 
     print(f'Warping {imgPath} diffusion measures to standard space')
     directory = os.path.dirname(imgPath)
-    inPrefix = imgPath.split('.')[0]
+    inPrefix = imgPath.split('.nii')[0]
     prefix = os.path.split(inPrefix)[-1]
 
     dmImg = os.path.join(directory, 'dti', prefix + f'_FA.nii.gz')
@@ -155,7 +155,7 @@ def analyzeStat(file, templatePath):
 
     meanAttr=[]
     for imgPath in imgs:
-        inPrefix = imgPath.split('.')[0]
+        inPrefix = imgPath.split('.nii')[0]
         prefix = os.path.split(inPrefix)[-1]
 
         faImg= os.path.join(templatePath, prefix + f'_InMNI_FA.nii.gz')
