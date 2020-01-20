@@ -68,8 +68,8 @@ def bval_bvec_difference(imgPath_given_mat, imgPath_given_py, caselist):
         imgPath_py = imgPath_given_py.replace('XYZ', case)
 
         # load python
-        bvals_py = np.array(read_bvals(imgPath_py.split('.')[0] + '.bval'))
-        bvecs_py = np.array(read_bvecs(imgPath_py.split('.')[0] + '.bvec'))
+        bvals_py = np.array(read_bvals(imgPath_py..split('.nii')[0] + '.bval'))
+        bvecs_py = np.array(read_bvecs(imgPath_py..split('.nii')[0] + '.bvec'))
 
         bvals_py, bvecs_py = stack_one_b0(bvals_py, bvecs= bvecs_py)
         bvals_py= bvals_py.astype('float64')
@@ -77,8 +77,8 @@ def bval_bvec_difference(imgPath_given_mat, imgPath_given_py, caselist):
 
 
         # load matlab
-        bvals_mat = np.array(read_bvals(imgPath_mat.split('.')[0] + '.bval'))
-        bvecs_mat = np.array(read_bvecs(imgPath_mat.split('.')[0] + '.bvec'))
+        bvals_mat = np.array(read_bvals(imgPath_mat..split('.nii')[0] + '.bval'))
+        bvecs_mat = np.array(read_bvecs(imgPath_mat..split('.nii')[0] + '.bvec'))
         bvals_mat= bvals_mat.astype('float64')
         bvecs_mat= bvecs_mat.astype('float64')
 
@@ -119,7 +119,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
         img_py_obj = nib.load(imgPath_py)
         img_py= img_py_obj.get_data()
         # keep only the first b0
-        bvals = np.array(read_bvals(imgPath_py.split('.')[0] + '.bval'))
+        bvals = np.array(read_bvals(imgPath_py..split('.nii')[0] + '.bval'))
         img_py= stack_one_b0(bvals, dwi= img_py)
         img_py= img_py.astype('float64')
 
@@ -135,7 +135,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
         mean_diff.append(diff.mean())
 
         # save the difference mask
-        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
+        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat..split('.nii')[0]+'_diff_mask.nii.gz')
 
 
     print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
@@ -189,7 +189,7 @@ def dti_diff(imgPath_given_mat, imgPath_given_py, caselist):
         mean_diff.append(diff.mean())
 
         # save the difference mask
-        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0] + '_diff_mask.nii.gz')
+        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat..split('.nii')[0] + '_diff_mask.nii.gz')
 
     print(f'Mean of mean relative percentage difference: {np.mean(mean_diff)}')
     hist_calc(diff_list, bins= BINS)
@@ -228,7 +228,7 @@ def rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6):
 
             # save the difference mask
             affine = nib.load(imgPath_py).affine
-            nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0] + '_diff_mask.nii.gz')
+            nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat..split('.nii')[0] + '_diff_mask.nii.gz')
 
         print(f'Feature: L{i}: ')
         print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
@@ -265,7 +265,7 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
 
         # save the difference mask
         affine = nib.load(imgPath_py).affine
-        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat.split('.')[0]+'_diff_mask.nii.gz')
+        nib.Nifti1Image(diff, img_py_obj.affine, img_py_obj.header).to_filename(imgPath_mat..split('.nii')[0]+'_diff_mask.nii.gz')
 
         print(f'Feature: L{i}: ')
         print(f'Mean of mean relative percentage difference over all the voxels: {np.mean(mean_diff)}')
