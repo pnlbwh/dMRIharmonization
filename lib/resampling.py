@@ -43,8 +43,15 @@ def save_high_res(fileName, sp_high, lowResImgHdr, highResImg):
 
     imgHdrOut['dim'][1:4] = highResImg.shape[:3]
     scale= np.diag((sp_high/sp_low).tolist()+[1.])
-    imgHdrOut.set_sform(imgHdrOut.get_sform() @ scale)
-    imgHdrOut.set_qform(imgHdrOut.get_qform() @ scale)
+
+    sform= imgHdrOut.get_sform()
+    if sform[:3,:3].sum():
+        imgHdrOut.set_sform(sform @ scale)
+
+    qform= imgHdrOut.get_qform()
+    if qform[:3,:3].sum():
+        imgHdrOut.set_qform(qform @ scale)
+
     imgHdrOut['pixdim'][1:4] = sp_high
     save_nifti(fileName, highResImg, affine= imgHdrOut.get_best_affine(), hdr=imgHdrOut)
 
