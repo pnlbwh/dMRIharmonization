@@ -109,7 +109,6 @@ export TEMPLATE_CONSTRUCT_CORES=6
 --resample 1.5x1.5x1.5 \
 --template ./template/ \
 --tar_list prisma.txt \
---ref_name CONNECTOM \
 --tar_name PRISMA \
 --nproc -1 \
 --process --debug || EXIT 'harmonization.py with --process --debug failed'
