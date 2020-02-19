@@ -2,7 +2,7 @@ name: harmonization
 
 channels:
     - conda-forge
-    - aramislab
+    - pnlbwh
 
 dependencies:
     - python>=3.0
@@ -15,7 +15,7 @@ dependencies:
     - scikit-image
     - psutil
     - plumbum
-    - ants=2.2.0
+    - ants
     - conda-build
     - git
     - pip
