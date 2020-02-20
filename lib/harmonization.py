@@ -368,11 +368,11 @@ class pipeline(cli.Application):
 
         print(f'{self.target} site before harmonization: ')
         target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)
-        generate_csv(self.tar_unproc_csv, ref_mean, os.path.join(self.templatePath, self.target+'_before'))
+        generate_csv(self.tar_unproc_csv, target_mean_before, os.path.join(self.templatePath, self.target+'_before'))
 
         print(f'{self.target} site after harmonization: ')
         target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
-        generate_csv(self.harm_csv, ref_mean, os.path.join(self.templatePath, self.target+'_after'))
+        generate_csv(self.harm_csv, target_mean_after, os.path.join(self.templatePath, self.target+'_after'))
 
         
         print('\n\nPrinting statistics\n\n')
