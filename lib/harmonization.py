@@ -51,18 +51,6 @@ def check_csv(file, force):
                     dirCheckFlag= 0
 
 
-def printStat(ref_mean, csvFile):
-
-    print('mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: ')
-    imgs, _ = read_imgs_masks(csvFile)
-    for i, imgPath in enumerate(imgs):
-        print(os.path.basename(imgPath), ref_mean[i])
-
-    print('')
-    print('mean meanFA: ', np.mean(ref_mean))
-    print('std meanFA: ', np.std(ref_mean))
-    print('')
-
 def check_dir(path, force):
     if os.path.exists(path) and force:
         warnings.warn(f'{path} exists and will be overwritten')
@@ -96,19 +84,19 @@ class pipeline(cli.Application):
     ref_csv = cli.SwitchAttr(
         ['--ref_list'],
         cli.ExistingFile,
-        help='reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
+        help='reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\\n dwi2,mask2\\n...',
         mandatory=False)
 
     target_csv = cli.SwitchAttr(
         ['--tar_list'],
         cli.ExistingFile,
-        help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
-        mandatory=False)
+        help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\\n dwi2,mask2\\n...',
+        mandatory=True)
 
     harm_csv = cli.SwitchAttr(
         ['--harm_list'],
         cli.ExistingFile,
-        help='harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\ndwi2,mask2\n...',
+        help='harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\\n dwi2,mask2\\n...',
         mandatory=False)
 
     templatePath = cli.SwitchAttr(
@@ -174,7 +162,7 @@ class pipeline(cli.Application):
     reference = cli.SwitchAttr(
         '--ref_name',
         help= 'reference site name',
-        mandatory= True)
+        mandatory= False)
 
     target = cli.SwitchAttr(
         '--tar_name',
@@ -286,6 +274,7 @@ class pipeline(cli.Application):
         # go through each file listed in csv, check their existence, create dti and harm directories
         check_csv(self.target_csv, self.force)
 
+
         if self.debug:
             # calcuate diffusion measures of target site before any processing so we are able to compare
             # with the ones after harmonization
@@ -294,7 +283,7 @@ class pipeline(cli.Application):
             for imgPath, maskPath in zip(imgs, masks):
                 imgPath= convertedPath(imgPath)
                 maskPath= convertedPath(maskPath)
-                pool.apply_async(func= dti_harm, args= ((imgPath, maskPath, )))
+                pool.apply_async(func= dti_harm, args= (imgPath, maskPath,))
 
             pool.close()
             pool.join()
@@ -335,6 +324,16 @@ class pipeline(cli.Application):
         if preFlag:
             fm.close()
         fh.close()
+        
+        
+        if self.debug:
+            harmImgs, harmMasks= read_imgs_masks(self.harm_csv)
+            pool = multiprocessing.Pool(self.N_proc)
+            for imgPath,maskPath in zip(harmImgs,harmMasks):
+                pool.apply_async(func= dti_harm, args= (imgPath,maskPath))
+            pool.close()
+            pool.join()
+            
         print('\n\nHarmonization completed\n\n')
 
 
@@ -359,36 +358,49 @@ class pipeline(cli.Application):
 
         from debug_fa import analyzeStat
         from datetime import datetime
+        from harm_plot import generate_csv, harm_plot
 
-        print('\n\nPrinting statistics :\n\n')
+        print('\n\nComputing statistics\n\n')
         
-        # save statistics for future
-        statFile= os.path.join(self.templatePath, 'meanFAstat.txt') 
-        f= open(statFile,'a')
-        stdout= sys.stdout
-        sys.stdout= f
-        
-        print(datetime.now().strftime('%c'),'\n')
         print(f'{self.reference} site: ')
         ref_mean = analyzeStat(self.ref_csv, self.templatePath)
-        printStat(ref_mean, self.ref_csv)
+        generate_csv(self.ref_csv, ref_mean, os.path.join(self.templatePath, self.reference))
 
         print(f'{self.target} site before harmonization: ')
-        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)        
-        printStat(target_mean_before, self.tar_unproc_csv)
+        target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)
+        generate_csv(self.tar_unproc_csv, ref_mean, os.path.join(self.templatePath, self.target+'_before'))
 
         print(f'{self.target} site after harmonization: ')
-        target_mean_after = analyzeStat(self.harm_csv, self.templatePath) 
-        printStat(target_mean_after, self.harm_csv)
-        
-        f.close()
-        sys.stdout= stdout
+        target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
+        generate_csv(self.harm_csv, ref_mean, os.path.join(self.templatePath, self.target+'_after'))
 
-        # print statistics on console        
+        
+        print('\n\nPrinting statistics\n\n')
+        # save statistics for future
+        statFile= os.path.join(self.templatePath, 'meanFAstat.csv')
+        with open(statFile, 'a') as f:
+            f.write(datetime.now().strftime('%m/%d/%y %H:%M')+',mean meanFA,std meanFA\n')
+            
+            f.write(f'{self.reference},{np.mean(ref_mean)},{np.std(ref_mean)}\n')
+            f.write(f'{self.target}_before,{np.mean(target_mean_before)},{np.std(target_mean_before)}\n')
+            f.write(f'{self.target}_after,{np.mean(target_mean_after)},{np.std(target_mean_after)}\n')
+            
+            # print an empty line so future results, if appended, are visually separate
+            f.write('\n')
+        
+        
+        # print statistics on console
         with open(statFile) as f:
             print(f.read())
+            
         
-        print('\nThe statistics are also saved in ', statFile)
+        # generate graph
+        ebar= harm_plot([ref_mean, target_mean_before, target_mean_after],
+                         labels=[self.reference, self.target+'_before', self.target+'_after'],
+                         outPrefix=os.path.join(self.templatePath,'meanFAstat'))
+
+        print(f'\nDetailed statistics, summary results, and demonstrative plots are saved in:\n\n{self.templatePath}/*_stat.csv'
+              f'\n{statFile}\n{ebar}\n')
 
 
     def sanityCheck(self):
@@ -410,16 +422,14 @@ class pipeline(cli.Application):
                 raise EnvironmentError(f'{cmd} not found')
 
 
-        # go through each file listed in csv, check their existence, create dti and harm directories
-        # if self.ref_csv:
-        #     check_csv(self.ref_csv, self.force)
-        # check_csv(self.target_csv, self.force)
-
 
     def main(self):
         
         self.sanityCheck()       
-
+        
+        # FIXME https://github.com/pnlbwh/multi-shell-dMRIharmonization/issues/12
+        self.force=False
+        
         self.templatePath= os.path.abspath(self.templatePath)
         self.N_shm= int(self.N_shm)
         self.N_proc= int(self.N_proc)
