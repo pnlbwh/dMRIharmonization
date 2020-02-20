@@ -719,19 +719,20 @@ you have different sets of data for template creation and harmonization.
     
     Warps diffusion measures (FA, MD, GFA) to template space and then to subject
     space. Finally, calculates mean FA over IITmean_FA_skeleton.nii.gz
-    
+
     optional arguments:
       -h, --help            show this help message and exit
       -i INPUT, --input INPUT
-                            a .txt/.csv file having one column for FA imgs, or two
-                            columns for (img,mask) pair, the latter list is what
-                            you used in/obtained from harmonization.pysee
-                            documentation for more details
+                            a .txt/.csv file that you used in/obtained from
+                            harmonization.py having two columns for (img,mask)
+                            pair. See documentation for more details
       -s SITE, --site SITE  site name for locating template FA and mask in
-                            tempalte directory
+                            template directory
       -t TEMPLATE, --template TEMPLATE
                             template directory where Mean_{site}_FA.nii.gz and
                             {site}_Mask.nii.gz is located
+      --ncpu NCPU           number of cpus to use
+
 
 This script does not depend of registration performed during the harmonization process. Rather, it performs all the 
 steps mentioned above ([Debugging: In details](#debugging)) and computes mean FA over skeleton across all subjects 
