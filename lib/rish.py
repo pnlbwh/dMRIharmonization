@@ -45,7 +45,7 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
 
     # inserting correct shm_coeff computation block ---------------------------------
-    smooth= 0.006
+    smooth= 0.00001
     data = applymask(data, mask_data)
     data_norm, _ = normalize_data(data, where_b0=np.where(qb_model.gtab.b0s_mask)[0])
 
