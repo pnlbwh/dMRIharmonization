@@ -11,9 +11,15 @@
 # View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
 # ===============================================================================
 
-import os, shutil, configparser, sys
-import numpy as np
+from configparser import ConfigParser
+from os.path import join as pjoin, split as psplit, abspath, basename, dirname, isfile, exists
+from os import getpid, makedirs, remove, listdir, getenv
 from subprocess import check_call, Popen
+from shutil import copyfile, rmtree
+import numpy as np
+import sys
+
+SCRIPTDIR= abspath(dirname(__file__))
 
 import warnings
 with warnings.catch_warnings():

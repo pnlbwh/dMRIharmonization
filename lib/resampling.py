@@ -19,7 +19,6 @@ from scipy.io import loadmat, savemat
 from normalize import normalize_data, find_b0
 from util import *
 
-FILEDIR= os.path.dirname(os.path.abspath(__file__))
 
 def resize_spm(lowResImg, inPrefix):
 
@@ -28,7 +27,7 @@ def resize_spm(lowResImg, inPrefix):
     savemat(dataFile, {'lowResImg': lowResImg})
 
     # call MATLAB_Runtime based spm bspline interpolation
-    p= Popen((' ').join([os.path.join(FILEDIR,'spm_bspline_exec', 'bspline'), inPrefix]), shell=True)
+    p= Popen((' ').join([pjoin(SCRIPTDIR,'spm_bspline_exec', 'bspline'), inPrefix]), shell=True)
     p.wait()
 
     highResImg= np.nan_to_num(loadmat(inPrefix+'_resampled.mat')['highResImg'])
@@ -107,9 +106,9 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
 
         # clean up the mat files
-        os.remove(inPrefix+'_sp.mat')
-        os.remove(inPrefix+'_data.mat')
-        os.remove(inPrefix+'_resampled.mat')
+        remove(inPrefix+'_sp.mat')
+        remove(inPrefix+'_data.mat')
+        remove(inPrefix+'_resampled.mat')
 
 
         # resample the mask
@@ -119,9 +118,9 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
         
         # clean up the mat files
-        os.remove(inPrefix+'_sp.mat')
-        os.remove(inPrefix+'_data.mat')
-        os.remove(inPrefix+'_resampled.mat')
+        remove(inPrefix+'_sp.mat')
+        remove(inPrefix+'_data.mat')
+        remove(inPrefix+'_resampled.mat')
 
     else:
         raise ValueError('Undefined interp_toolbox')

@@ -347,42 +347,27 @@ NOTE: running the above test should take roughly an hour.
 `./pipeline_test.sh` will download test data*, and run the whole processing pipeline on them. 
 If the test is successful and complete, you should see the following output on the command line. 
     
-    CONNECTOM mean FA:  0.6787134267438087
-    PRISMA mean FA before harmonization:  0.8016994786111754
-    PRISMA mean FA after harmonization:  0.6335818260201815
+    02/24/20 11:37,mean meanFA,std meanFA
+    CONNECTOM,0.6799002461759734,0.007886013534889139
+    PRISMA_before,0.8016994786111754,0.010304926419301603
+    PRISMA_after,0.6763777736686049,0.010977445592601354
     
-    
-In detail:
 
-    CONNECTOM site: 
-    mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: 
-    dwi_A_connectom_st_b1200_resampled.nii.gz 0.6664273368527192
-    dwi_B_connectom_st_b1200_resampled.nii.gz 0.6880572316659973
-    dwi_C_connectom_st_b1200_resampled.nii.gz 0.6816557117127096
+The above output are saved in `template/meanFAstat.csv` file. Detailed statistics are saved in:
+
+    connectom_prisma/template/CONNECTOM_stat.csv  
+    connectom_prisma/template/PRISMA_before_stat.csv
+    connectom_prisma/template/PRISMA_after_stat.csv
     
-    mean meanFA:  0.6787134267438087
-    std meanFA:  0.00907215035284852
     
-    PRISMA site before harmonization: 
-    mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: 
-    dwi_A_prisma_st_b1200.nii.gz 0.7879066657395326
-    dwi_B_prisma_st_b1200.nii.gz 0.8126709307616746
-    dwi_C_prisma_st_b1200.nii.gz 0.8045208393323189
-    
-    mean meanFA:  0.8016994786111754
-    std meanFA:  0.010304926419301603
-    
-    PRISMA site after harmonization: 
-    mean FA over IIT_mean_FA_skeleton.nii.gz for all cases: 
-    harmonized_dwi_A_prisma_st_b1200_resampled.nii.gz 0.6240905840733715
-    harmonized_dwi_B_prisma_st_b1200_resampled.nii.gz 0.6487062683838898
-    harmonized_dwi_C_prisma_st_b1200_resampled.nii.gz 0.6279486256032834
-    
-    mean meanFA:  0.6335818260201815
-    std meanFA:  0.010809954940438949
+In addition, you should check out the plot `template/meanFAstat_ebarplot.png` that demonstrates quality of dMRIharmonization:
+
+![](doc/meanFAstat_ebarplot.png)
 
 
-\* If there is any problem downloading test data, try manually downloading and unzipping it to `lib/tests/` folder.
+As you see in the above, after harmonization, target site (PRISMA) meanFA came closer to that of reference site (CONNECTOM) FA.
+
+**NOTE** If there is any problem downloading test data, try manually downloading and unzipping it to `lib/tests/` folder.
 
 
 ## 2. unittest
