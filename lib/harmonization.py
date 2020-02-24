@@ -274,8 +274,8 @@ class pipeline(cli.Application):
 
     def harmonizeData(self):
 
-        from reconstSignal import reconst
-        from preprocess import dti_harm
+        from reconstSignal import reconst, approx
+        from preprocess import dti_harm, preprocessing
 
         # check the templatePath
         if not exists(self.templatePath):
@@ -284,9 +284,37 @@ class pipeline(cli.Application):
             if not listdir(self.templatePath):
                 raise ValueError(f'{self.templatePath} is empty')
 
+
+
+        # fit spherical harmonics on reference site
+        if self.debug and self.ref_csv:
+            check_csv(self.ref_unproc_csv, self.force)
+            refImgs, refMasks= read_imgs_masks(self.ref_unproc_csv)
+            res= []
+            pool = multiprocessing.Pool(self.N_proc)
+            for imgPath, maskPath in zip(refImgs, refMasks):
+                res.append(pool.apply_async(func=preprocessing, args=(imgPath, maskPath)))
+
+            attributes = [r.get() for r in res]
+
+            pool.close()
+            pool.join()
+
+            for i in range(len(refImgs)):
+                refImgs[i] = attributes[i][0]
+                refMasks[i] = attributes[i][1]
+
+            pool = multiprocessing.Pool(self.N_proc)
+            for imgPath, maskPath in zip(refImgs, refMasks):
+                pool.apply_async(func= approx, args=(imgPath,maskPath,))
+
+            pool.close()
+            pool.join()
+
+
+
         # go through each file listed in csv, check their existence, create dti and harm directories
         check_csv(self.target_csv, self.force)
-
 
         if self.debug:
             # calcuate diffusion measures of target site before any processing so we are able to compare
@@ -444,10 +472,8 @@ class pipeline(cli.Application):
         if self.N_proc==-1:
             self.N_proc= N_CPU
 
-        if self.target_csv.endswith('.modified'):
-            self.tar_unproc_csv= str(self.target_csv).split('.modified')[0]
-        else:
-            self.tar_unproc_csv= str(self.target_csv)
+        self.ref_unproc_csv= self.ref_csv.strip('.modified')
+        self.tar_unproc_csv= self.target_csv.strip('.modified')
 
         if not self.stats:        
             # check appropriateness of N_shm
