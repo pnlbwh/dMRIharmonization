@@ -6,7 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 from conversion import read_imgs_masks
-from os.path import isfile, basename
+from os.path import basename
 
 XERR=0.1
 ELINEWIDTH=3
@@ -85,8 +85,6 @@ def generate_csv(imgs, site_means, outPrefix):
 
 
 if __name__=='__main__':
-
-    import numpy as np
 
     sub=['hi','hello','go','come']
     ref_mean= list(0.05*np.random.randn(20)+0.5) # [0.46, 0.49, 0.44, 0.40]
