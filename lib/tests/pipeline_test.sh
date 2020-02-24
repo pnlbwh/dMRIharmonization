@@ -80,10 +80,6 @@ write_list prisma.txt
 
 
 
-# remove template folder so template is re-created during --process --debug block
-rm -rf template && \
-
-
 ### Run pipeline and obtain statistics when small set of matched reference and target images are used in template creation
 ### and a larger set (does not have to be mutually exclusive from the former) of target images are used in harmonization
 
@@ -101,7 +97,7 @@ export TEMPLATE_CONSTRUCT_CORES=6
 --tar_name PRISMA \
 --travelHeads \
 --nproc -1 \
---create --debug || EXIT 'harmonization.py with --create --debug failed'
+--create --debug --force || EXIT 'harmonization.py with --create --debug --force failed'
 
 # --process and --debug block
 ../../harmonization.py \
@@ -111,7 +107,7 @@ export TEMPLATE_CONSTRUCT_CORES=6
 --tar_list prisma.txt \
 --tar_name PRISMA \
 --nproc -1 \
---process --debug || EXIT 'harmonization.py with --process --debug failed'
+--process --debug --force || EXIT 'harmonization.py with --process --debug --force failed'
 
 
 
