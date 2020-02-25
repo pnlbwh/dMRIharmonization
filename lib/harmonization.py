@@ -472,7 +472,8 @@ class pipeline(cli.Application):
         if self.N_proc==-1:
             self.N_proc= N_CPU
 
-        self.ref_unproc_csv= self.ref_csv.strip('.modified')
+        if self.ref_csv:
+            self.ref_unproc_csv= self.ref_csv.strip('.modified')
         self.tar_unproc_csv= self.target_csv.strip('.modified')
 
         if not self.stats:        
