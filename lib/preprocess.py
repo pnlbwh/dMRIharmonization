@@ -141,9 +141,12 @@ def preprocessing(imgPath, maskPath):
 
         imgPath= outPrefix+'.nii.gz'
 
+    try:
+        sp_high = np.array([float(i) for i in resample.split('x')])
+    except:
+        sp_high = lowResImgHdr['pixdim'][1:4]
 
     # modifies data, mask, and headers
-    sp_high = np.array([float(i) for i in resample.split('x')])
     if resample and (abs(sp_high-lowResImgHdr['pixdim'][1:4])>10e-3).any():
         inPrefix = imgPath.split('.nii')[0]
         outPrefix = inPrefix + '_resampled'
