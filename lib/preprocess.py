@@ -184,10 +184,13 @@ def common_processing(caselist):
     pool.close()
     pool.join()
 
-    
+
+    f = open(caselist + '.modified', 'w')
     for i in range(len(imgs)):
         imgs[i] = attributes[i][0]
         masks[i] = attributes[i][1]
+        f.write(f'{imgs[i]},{masks[i]}\n')
+    f.close()
 
 
     # compute dti_harm of preprocessed data
