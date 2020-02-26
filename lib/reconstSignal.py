@@ -203,8 +203,6 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model, hdr):
 
 def reconst(imgPath, maskPath, moving, templatePath):
 
-    imgPath, maskPath = preprocessing(imgPath, maskPath)
-
     img = load(imgPath)
 
     directory = dirname(imgPath)
@@ -226,7 +224,7 @@ def reconst(imgPath, maskPath, moving, templatePath):
     copyfile(inPrefix + '.bvec', harmImg.split('.nii')[0] + '.bvec')
     copyfile(inPrefix + '.bval', harmImg.split('.nii')[0] + '.bval')
 
-    return (imgPath, maskPath, harmImg, harmMask)
+    return (harmImg, harmMask)
 
 
 def stack_b0(b0s_mask, dwi, b0):
