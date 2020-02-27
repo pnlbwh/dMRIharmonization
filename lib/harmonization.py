@@ -194,13 +194,13 @@ class pipeline(cli.Application):
         # createTemplate steps -----------------------------------------------------------------------------------------
 
         # read image lists
-        refImgs, refMasks= common_processing(self.ref_csv)
+        refImgs, refMasks= common_processing(self.ref_unproc_csv)
         if not self.ref_csv.endswith('.modified'):
             self.ref_csv += '.modified'
         # debug: use the following line to omit processing again
         # refImgs, refMasks = read_imgs_masks(self.ref_csv)
 
-        targetImgs, targetMasks= common_processing(self.target_csv)
+        targetImgs, targetMasks= common_processing(self.tar_unproc_csv)
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
         # debug: use the following line to omit processing again
@@ -274,8 +274,8 @@ class pipeline(cli.Application):
 
     def harmonizeData(self):
 
-        from reconstSignal import reconst
-        from preprocess import dti_harm
+        from reconstSignal import reconst, approx
+        from preprocess import dti_harm, common_processing, preprocessing
 
         # check the templatePath
         if not exists(self.templatePath):
@@ -284,56 +284,64 @@ class pipeline(cli.Application):
             if not listdir(self.templatePath):
                 raise ValueError(f'{self.templatePath} is empty')
 
-        # go through each file listed in csv, check their existence, create dti and harm directories
-        check_csv(self.target_csv, self.force)
 
 
-        if self.debug:
-            # calcuate diffusion measures of target site before any processing so we are able to compare
-            # with the ones after harmonization
-            imgs, masks= read_imgs_masks(self.tar_unproc_csv)
+        # fit spherical harmonics on reference site
+        if self.debug and self.ref_csv:
+            check_csv(self.ref_unproc_csv, self.force)
+            refImgs, refMasks= read_imgs_masks(self.ref_unproc_csv)
+            res= []
             pool = multiprocessing.Pool(self.N_proc)
-            for imgPath, maskPath in zip(imgs, masks):
-                imgPath= convertedPath(imgPath)
-                maskPath= convertedPath(maskPath)
-                pool.apply_async(func= dti_harm, args= (imgPath,maskPath,))
+            for imgPath, maskPath in zip(refImgs, refMasks):
+                res.append(pool.apply_async(func=preprocessing, args=(imgPath, maskPath)))
+
+            attributes = [r.get() for r in res]
 
             pool.close()
             pool.join()
 
+            for i in range(len(refImgs)):
+                refImgs[i] = attributes[i][0]
+                refMasks[i] = attributes[i][1]
+
+            pool = multiprocessing.Pool(self.N_proc)
+            for imgPath, maskPath in zip(refImgs, refMasks):
+                pool.apply_async(func= approx, args=(imgPath,maskPath,))
+
+            pool.close()
+            pool.join()
+
+
+
+        # go through each file listed in csv, check their existence, create dti and harm directories
+        check_csv(self.target_csv, self.force)
+        targetImgs, targetMasks= common_processing(self.tar_unproc_csv)
+
+
         # reconstSignal steps ------------------------------------------------------------------------------------------
 
-        # read target image list
         moving= pjoin(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
-        imgs, masks= read_imgs_masks(self.tar_unproc_csv)
 
-        
-        fm= None
+
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
-            fm = open(self.target_csv, 'w')
 
 
         self.harm_csv= self.target_csv+'.harmonized'
         fh= open(self.harm_csv, 'w')
         pool = multiprocessing.Pool(self.N_proc)
         res= []
-        for imgPath, maskPath in zip(imgs, masks):
+        for imgPath, maskPath in zip(targetImgs, targetMasks):
             res.append(pool.apply_async(func= reconst, args= (imgPath, maskPath, moving, self.templatePath,)))
 
         for r in res:
-            imgPath, maskPath, harmImg, harmMask= r.get()
-            
-            if isinstance(fm, io.IOBase):
-                fm.write(imgPath + ',' + maskPath + '\n')
+            harmImg, harmMask= r.get()
             fh.write(harmImg + ',' + harmMask + '\n')
 
 
         pool.close()
         pool.join()
 
-        if isinstance(fm, io.IOBase):
-            fm.close()
         fh.close()
         
         
@@ -444,10 +452,9 @@ class pipeline(cli.Application):
         if self.N_proc==-1:
             self.N_proc= N_CPU
 
-        if self.target_csv.endswith('.modified'):
-            self.tar_unproc_csv= str(self.target_csv).split('.modified')[0]
-        else:
-            self.tar_unproc_csv= str(self.target_csv)
+        if self.ref_csv:
+            self.ref_unproc_csv= self.ref_csv.strip('.modified')
+        self.tar_unproc_csv= self.target_csv.strip('.modified')
 
         if not self.stats:        
             # check appropriateness of N_shm

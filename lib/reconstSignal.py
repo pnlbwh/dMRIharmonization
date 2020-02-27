@@ -90,6 +90,45 @@ def findLargestConnectMask(img, mask):
     return mask
 
 
+def approx(imgPath, maskPath):
+
+    print(f'Fitting spherical harmonics on {imgPath} ...')
+
+    directory = dirname(imgPath)
+    inPrefix = imgPath.split('.nii')[0]
+    prefix = psplit(inPrefix)[-1]
+    outPrefix = pjoin(directory, 'harm', prefix)
+
+    b0, shm_coeff, qb_model = rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
+    B = qb_model.B
+
+    img= load(imgPath)
+    hdr= img.header
+    affine= img.affine
+
+    S_hat= np.dot(shm_coeff, B.T)
+    # keep only upper half of the reconstructed signal
+    S_hat= S_hat[..., :int(S_hat.shape[3]/2)]
+    np.nan_to_num(S_hat).clip(min= 0., max= 1., out= S_hat)
+
+    # affine= templateAffine for all Scale_L{i}
+    mappedFile= pjoin(directory, f'{prefix}_mapped_cs.nii.gz')
+    save_nifti(mappedFile, S_hat, affine, hdr)
+
+    # un-normalize approximated data
+    S_hat_dwi= applymask(S_hat, b0) # overriding applymask function with a nonbinary mask b0
+
+    # place b0s in proper indices
+    S_hat_final= stack_b0(qb_model.gtab.b0s_mask, S_hat_dwi, b0)
+
+    # save approximated data
+    harmImg= pjoin(directory, f'reconstructed_{prefix}.nii.gz')
+    if force or not isfile(harmImg):
+        save_nifti(harmImg, S_hat_final, affine, hdr)
+        copyfile(inPrefix + '.bvec', harmImg.split('.nii')[0] + '.bvec')
+        copyfile(inPrefix + '.bval', harmImg.split('.nii')[0] + '.bval')
+
+
 def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model, hdr):
 
     B = qb_model.B
@@ -164,8 +203,6 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model, hdr):
 
 def reconst(imgPath, maskPath, moving, templatePath):
 
-    imgPath, maskPath = preprocessing(imgPath, maskPath)
-
     img = load(imgPath)
 
     directory = dirname(imgPath)
@@ -187,7 +224,7 @@ def reconst(imgPath, maskPath, moving, templatePath):
     copyfile(inPrefix + '.bvec', harmImg.split('.nii')[0] + '.bvec')
     copyfile(inPrefix + '.bval', harmImg.split('.nii')[0] + '.bval')
 
-    return (imgPath, maskPath, harmImg, harmMask)
+    return (harmImg, harmMask)
 
 
 def stack_b0(b0s_mask, dwi, b0):
