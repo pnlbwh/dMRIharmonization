@@ -122,7 +122,7 @@ def approx(imgPath, maskPath):
     S_hat_final= stack_b0(qb_model.gtab.b0s_mask, S_hat_dwi, b0)
 
     # save approximated data
-    harmImg= pjoin(directory, f'Reconstructed_{prefix}.nii.gz')
+    harmImg= pjoin(directory, f'reconstructed_{prefix}.nii.gz')
     if force or not isfile(harmImg):
         save_nifti(harmImg, S_hat_final, affine, hdr)
         copyfile(inPrefix + '.bvec', harmImg.split('.nii')[0] + '.bvec')
