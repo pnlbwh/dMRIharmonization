@@ -50,7 +50,7 @@ def warp_bands(imgPath, maskPath, templatePath):
     applyXform(maskPath,
                pjoin(templatePath, 'template0.nii.gz'),
                warp, trans,
-               pjoin(templatePath, abspath(maskPath).split('.nii')[0]+ 'Warped.nii.gz'))
+               pjoin(templatePath, basename(maskPath).split('.nii')[0]+ 'Warped.nii.gz'))
 
 
     # warping the rish features
@@ -101,7 +101,7 @@ def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
 
     maskData = []
     for maskPath in masks:
-        maskData.append(load_nifti(pjoin(templatePath, abspath(maskPath).split('.nii')[0] + 'Warped.nii.gz'))[0])
+        maskData.append(load_nifti(pjoin(templatePath, basename(maskPath).split('.nii')[0] + 'Warped.nii.gz'))[0])
 
 
     morphed_mask= binary_opening(np.mean(maskData, axis= 0)>0.5, structure= generate_binary_structure(3,1))*1
