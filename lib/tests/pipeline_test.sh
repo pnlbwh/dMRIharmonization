@@ -39,7 +39,7 @@ __version__=`echo $v | xargs`
 test_data=connectom_prisma # change this value if test data name is changed
 if [ ! -f ${test_data}.zip ]
 then
-    wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
+    wget https://github.com/pnlbwh/dMRIharmonization/releases/download/v${__version__}/${test_data}.zip
 fi
 
 tar -xzvf ${test_data}.zip
