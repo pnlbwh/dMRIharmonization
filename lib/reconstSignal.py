@@ -98,6 +98,10 @@ def approx(imgPath, maskPath):
     inPrefix = imgPath.split('.nii')[0]
     prefix = psplit(inPrefix)[-1]
     outPrefix = pjoin(directory, 'harm', prefix)
+    harmImg= pjoin(directory, f'reconstructed_{prefix}.nii.gz')
+    
+    if not force and isfile(harmImg):
+        return
 
     b0, shm_coeff, qb_model = rish(imgPath, maskPath, inPrefix, outPrefix, N_shm)
     B = qb_model.B
@@ -122,11 +126,9 @@ def approx(imgPath, maskPath):
     S_hat_final= stack_b0(qb_model.gtab.b0s_mask, S_hat_dwi, b0)
 
     # save approximated data
-    harmImg= pjoin(directory, f'reconstructed_{prefix}.nii.gz')
-    if force or not isfile(harmImg):
-        save_nifti(harmImg, S_hat_final, affine, hdr)
-        copyfile(inPrefix + '.bvec', harmImg.split('.nii')[0] + '.bvec')
-        copyfile(inPrefix + '.bval', harmImg.split('.nii')[0] + '.bval')
+    save_nifti(harmImg, S_hat_final, affine, hdr)
+    copyfile(inPrefix + '.bvec', harmImg.split('.nii')[0] + '.bvec')
+    copyfile(inPrefix + '.bval', harmImg.split('.nii')[0] + '.bval')
 
 
 def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model, hdr):
