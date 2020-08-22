@@ -19,7 +19,6 @@ from scipy.io import loadmat, savemat
 from normalize import normalize_data, find_b0
 from util import *
 
-FILEDIR= os.path.dirname(os.path.abspath(__file__))
 
 def resize_spm(lowResImg, inPrefix):
 
@@ -28,7 +27,7 @@ def resize_spm(lowResImg, inPrefix):
     savemat(dataFile, {'lowResImg': lowResImg})
 
     # call MATLAB_Runtime based spm bspline interpolation
-    p= Popen((' ').join([os.path.join(FILEDIR,'spm_bspline_exec', 'bspline'), inPrefix]), shell=True)
+    p= Popen((' ').join([pjoin(SCRIPTDIR,'spm_bspline_exec', 'bspline'), inPrefix]), shell=True)
     p.wait()
 
     highResImg= np.nan_to_num(loadmat(inPrefix+'_resampled.mat')['highResImg'])
@@ -43,8 +42,15 @@ def save_high_res(fileName, sp_high, lowResImgHdr, highResImg):
 
     imgHdrOut['dim'][1:4] = highResImg.shape[:3]
     scale= np.diag((sp_high/sp_low).tolist()+[1.])
-    imgHdrOut.set_sform(imgHdrOut.get_sform() @ scale)
-    imgHdrOut.set_qform(imgHdrOut.get_qform() @ scale)
+
+    sform= imgHdrOut.get_sform()
+    if sform[:3,:3].sum():
+        imgHdrOut.set_sform(sform @ scale)
+
+    qform= imgHdrOut.get_qform()
+    if qform[:3,:3].sum():
+        imgHdrOut.set_qform(qform @ scale)
+
     imgHdrOut['pixdim'][1:4] = sp_high
     save_nifti(fileName, highResImg, affine= imgHdrOut.get_best_affine(), hdr=imgHdrOut)
 
@@ -84,7 +90,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
         step = sp_high / sp_low
         sx,sy,sz= [int(x) for x in ((lowResImg.shape[:3] + step + 0.01 - 1) / step + 1)]
 
-        inPrefix= lowResImgPath.split('.')[0]
+        inPrefix= lowResImgPath.split('.nii')[0]
         # save space resolutions, image size, and bspline order
         savemat(inPrefix+'_sp.mat', {'sp_high':sp_high,'sp_low':sp_low, 'imgDim':lowResImg.shape[:3], 'sOrder':sOrder})
 
@@ -100,40 +106,40 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
 
 
         # clean up the mat files
-        os.remove(inPrefix+'_sp.mat')
-        os.remove(inPrefix+'_data.mat')
-        os.remove(inPrefix+'_resampled.mat')
+        remove(inPrefix+'_sp.mat')
+        remove(inPrefix+'_data.mat')
+        remove(inPrefix+'_resampled.mat')
 
 
         # resample the mask
-        inPrefix= lowResMaskPath.split('.')[0]
+        inPrefix= lowResMaskPath.split('.nii')[0]
         savemat(inPrefix+'_sp.mat', {'sp_high':sp_high,'sp_low':sp_low, 'imgDim':lowResImg.shape[:3], 'sOrder':1})
-        highResMask= resize_spm(lowResMask, lowResMaskPath.split('.')[0])
+        highResMask= resize_spm(lowResMask, lowResMaskPath.split('.nii')[0])
 
         
         # clean up the mat files
-        os.remove(inPrefix+'_sp.mat')
-        os.remove(inPrefix+'_data.mat')
-        os.remove(inPrefix+'_resampled.mat')
+        remove(inPrefix+'_sp.mat')
+        remove(inPrefix+'_data.mat')
+        remove(inPrefix+'_resampled.mat')
 
     else:
         raise ValueError('Undefined interp_toolbox')
 
 
     # process the resampled mask --------------------------------------------------------------
-    highResMaskPath = lowResMaskPath.split('.')[0] + '_resampled.nii.gz'
+    highResMaskPath = lowResMaskPath.split('.nii')[0] + '_resampled.nii.gz'
     highResMask= binary_opening(highResMask >= 0.5, structure=generate_binary_structure(3, 1)) * 1
     save_high_res(highResMaskPath, sp_high, lowResMaskHdr, highResMask.astype('uint8'))
 
 
     # resample the b0 ----------------------------------------------------------------
-    highResB0PathTmp= lowResImgPath.split('.')[0] + '_resampled_bse_tmp.nii.gz'
+    highResB0PathTmp= lowResImgPath.split('.nii')[0] + '_resampled_bse_tmp.nii.gz'
     np.nan_to_num(b0HighRes).clip(min= 0., out= b0HighRes) # using min= 1. is unnecessary
     b0HighRes= applymask(b0HighRes, highResMask)
     save_high_res(highResB0PathTmp, sp_high, lowResMaskHdr, b0HighRes)
 
     # unring the b0
-    highResB0Path = lowResImgPath.split('.')[0] + '_resampled_bse.nii.gz'
+    highResB0Path = lowResImgPath.split('.nii')[0] + '_resampled_bse.nii.gz'
     p= Popen((' ').join(['unring.a64', highResB0PathTmp, highResB0Path]), shell= True)
     p.wait()
 
@@ -160,7 +166,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     highResImg[highResImg < lh_min] = lh_min
 
     highResImg= applymask(highResImg, highResMask)
-    highResImgPath= lowResImgPath.split('.')[0]+'_resampled.nii.gz'
+    highResImgPath= lowResImgPath.split('.nii')[0]+'_resampled.nii.gz'
     save_high_res(highResImgPath, sp_high, lowResImgHdr, highResImg)
 
     return (highResImgPath, highResMaskPath)

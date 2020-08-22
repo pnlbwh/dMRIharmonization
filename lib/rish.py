@@ -38,14 +38,14 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
         # save baseline image
         b0 = find_b0(data, where_b0=np.where(qb_model.gtab.b0s_mask)[0])
-        if not os.path.exists(inPrefix+'_bse.nii.gz'):
+        if not isfile(inPrefix+'_bse.nii.gz'):
             save_nifti(inPrefix+'_bse.nii.gz', applymask(b0, mask_data), affine, hdr)
     else:
         b0= None
 
 
     # inserting correct shm_coeff computation block ---------------------------------
-    smooth= 0.006
+    smooth= 0.00001
     data = applymask(data, mask_data)
     data_norm, _ = normalize_data(data, where_b0=np.where(qb_model.gtab.b0s_mask)[0])
 
@@ -59,13 +59,10 @@ def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
     shm_coeff_squared= shm_coeff**2
     shs_same_level= [[0, 1], [1, 6], [6, 15], [15, 28], [28, 45]]
-    # rishImgs= np.zeros((data.shape[0], data.shape[1], data.shape[2], N_shm), dtype= float)
     for i in range(0, N_shm+1, 2):
         ind= int(i/2)
         temp= np.sum(shm_coeff_squared[:,:,:,shs_same_level[ind][0]:shs_same_level[ind][1]], axis= 3)
         save_nifti(f'{outPrefix}_L{ind*2}.nii.gz', temp, affine, hdr)
-
-        # rishImgs[:, :, :, i]= temp
 
 
     return (b0, shm_coeff, qb_model)

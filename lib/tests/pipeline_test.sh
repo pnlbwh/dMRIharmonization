@@ -39,7 +39,7 @@ __version__=`echo $v | xargs`
 test_data=connectom_prisma # change this value if test data name is changed
 if [ ! -f ${test_data}.zip ]
 then
-    wget https://github.com/pnlbwh/Harmonization-Python/releases/download/v${__version__}/${test_data}.zip
+    wget https://github.com/pnlbwh/dMRIharmonization/releases/download/v${__version__}/${test_data}.zip
 fi
 
 tar -xzvf ${test_data}.zip
@@ -80,10 +80,6 @@ write_list prisma.txt
 
 
 
-# remove template folder so template is re-created during --process --debug block
-rm -rf template && \
-
-
 ### Run pipeline and obtain statistics when small set of matched reference and target images are used in template creation
 ### and a larger set (does not have to be mutually exclusive from the former) of target images are used in harmonization
 
@@ -91,6 +87,18 @@ rm -rf template && \
 export TEMPLATE_CONSTRUCT_CORES=6
 
 # --create and --debug block
+../../harmonization.py \
+--bvalMap 1000 \
+--resample 1.5x1.5x1.5 \
+--template ./template/ \
+--ref_list connectom.txt \
+--tar_list prisma.txt \
+--ref_name CONNECTOM \
+--tar_name PRISMA \
+--travelHeads \
+--nproc -1 \
+--create --debug --force || EXIT 'harmonization.py with --create --debug --force failed'
+
 ../../harmonization.py \
 --bvalMap 1000 \
 --resample 1.5x1.5x1.5 \
@@ -109,13 +117,37 @@ export TEMPLATE_CONSTRUCT_CORES=6
 --resample 1.5x1.5x1.5 \
 --template ./template/ \
 --tar_list prisma.txt \
---ref_name CONNECTOM \
 --tar_name PRISMA \
+--ref_list connectom.txt \
+--nproc -1 \
+--process --debug --force || EXIT 'harmonization.py with --process --debug --force failed'
+
+../../harmonization.py \
+--bvalMap 1000 \
+--resample 1.5x1.5x1.5 \
+--template ./template/ \
+--tar_list prisma.txt \
+--tar_name PRISMA \
+--ref_list connectom.txt \
 --nproc -1 \
 --process --debug || EXIT 'harmonization.py with --process --debug failed'
 
+# ===============================================================================================================
+
+# same bvalue, resolution block
+cp connectom.txt.modified connectom_same.txt
+cp prisma.txt.modified prisma_same.txt
+../../harmonization.py \
+--template ./template/ \
+--ref_list connectom_same.txt \
+--tar_list prisma_same.txt \
+--ref_name CONNECTOM \
+--tar_name PRISMA \
+--nproc -1 \
+--create --process || EXIT 'harmonization.py for same bvalue, resolution with --create --process failed'
 
 
+# ===============================================================================================================
 # compute statistics
 ../fa_skeleton_test.py -i connectom.txt.modified \
 -s CONNECTOM -t template/ || EXIT 'fa_skeleton_test.py failed for modified reference'
