@@ -27,7 +27,7 @@ class TestDenoise(unittest.TestCase):
         lowResImgPath = inPrefix + '.nii.gz'
         lowResMaskPath = inPrefix + '_mask.nii.gz'
 
-        # load signal attributes for pre-processing ----------------------------------------------------------------
+        # load signal attributes for pre-processing ---------------------------
         imgPath = nrrd2nifti(lowResImgPath)
         dwi = load(imgPath)
 
@@ -35,7 +35,7 @@ class TestDenoise(unittest.TestCase):
         mask = load(maskPath)
 
         print('Denoising ', imgPath)
-        dwiNew, _= denoising(dwi.get_data(), mask.get_data())
+        dwiNew, _ = denoising(dwi.get_data(), mask.get_data())
         outPrefix = imgPath.split('.nii')[0] + '_denoised'
         save_nifti(outPrefix + '.nii.gz', dwiNew, dwi.affine, dwi.header)
         copyfile(inPrefix + '.bvec', outPrefix + '.bvec')

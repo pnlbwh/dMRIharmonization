@@ -11,6 +11,7 @@
 # View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
 # ===============================================================================
 
+import warnings
 from configparser import ConfigParser
 from os.path import join as pjoin, split as psplit, abspath, basename, dirname, isfile, exists
 from os import getpid, makedirs, remove, listdir, getenv
@@ -19,9 +20,8 @@ from shutil import copyfile, rmtree
 import numpy as np
 import sys
 
-SCRIPTDIR= abspath(dirname(__file__))
+SCRIPTDIR = abspath(dirname(__file__))
 
-import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=FutureWarning)
     from nibabel import load, Nifti1Image
@@ -35,7 +35,7 @@ with warnings.catch_warnings():
 
 
 def save_nifti(fname, data, affine, hdr=None):
-    if data.dtype.name=='uint8':
+    if data.dtype.name == 'uint8':
         hdr.set_data_dtype('uint8')
     else:
         hdr.set_data_dtype('float32')
@@ -54,6 +54,6 @@ def convertedPath(imgPath):
     return imgPath
 
 
-B0_THRESH= 50.
-B_QUANT= 50.
-BSHELL_MIN_DIST= 100.
+B0_THRESH = 50.
+B_QUANT = 50.
+BSHELL_MIN_DIST = 100.

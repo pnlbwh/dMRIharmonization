@@ -18,14 +18,16 @@ from reconstSignal import antsReg
 import multiprocessing
 from util import *
 
-SCRIPTDIR= dirname(__file__)
-ROOTDIR= abspath(pjoin(SCRIPTDIR, '..'))
+SCRIPTDIR = dirname(__file__)
+ROOTDIR = abspath(pjoin(SCRIPTDIR, '..'))
 mniTmp = pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA.nii.gz')
 
 config = ConfigParser()
 config.read(f'/tmp/harm_config_{getpid()}.ini')
 N_proc = int(config['DEFAULT']['N_proc'])
-diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
+diffusionMeasures = [x for x in config['DEFAULT']
+                     ['diffusionMeasures'].split(',')]
+
 
 def register_reference(imgPath, warp2mni, trans2mni, templatePath):
 
@@ -64,7 +66,8 @@ def register_target(imgPath, templatePath):
     outPrefix = pjoin(templatePath, prefix + '_FA_ToMNI_')
     warp2mni = outPrefix + '1Warp.nii.gz'
     trans2mni = outPrefix + '0GenericAffine.mat'
-    # unprocessed target data is given, so in case multiple debug is needed, pass the registration
+    # unprocessed target data is given, so in case multiple debug is needed,
+    # pass the registration
     if not exists(warp2mni):
         antsReg(mniTmp, None, dmImg, outPrefix)
 
@@ -113,30 +116,53 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
         ] & FG
 
 
-def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False, tar_harm= False):
+def sub2tmp2mni(
+        templatePath,
+        siteName,
+        caselist,
+        ref=False,
+        tar_unproc=False,
+        tar_harm=False):
 
     # obtain the transform
     moving = pjoin(templatePath, f'Mean_{siteName}_FA.nii.gz')
 
-    outPrefix= pjoin(templatePath, f'TemplateToMNI_{siteName}')
-    warp2mni= outPrefix+'1Warp.nii.gz'
-    trans2mni= outPrefix+'0GenericAffine.mat'
+    outPrefix = pjoin(templatePath, f'TemplateToMNI_{siteName}')
+    warp2mni = outPrefix + '1Warp.nii.gz'
+    trans2mni = outPrefix + '0GenericAffine.mat'
     # template is created once, it is expected that the user wants to keep the template same during debugging
     # so in case multiple debug is needed, pass the registration
     if not exists(warp2mni):
         antsReg(mniTmp, None, moving, outPrefix)
 
-    imgs, _= read_caselist(caselist)
+    imgs, _ = read_caselist(caselist)
 
-    pool= multiprocessing.Pool(N_proc)
+    pool = multiprocessing.Pool(N_proc)
     for imgPath in imgs:
 
         if ref:
-            pool.apply_async(func= register_reference, args= (imgPath, warp2mni, trans2mni, templatePath, ))
+            pool.apply_async(
+                func=register_reference,
+                args=(
+                    imgPath,
+                    warp2mni,
+                    trans2mni,
+                    templatePath,
+                ))
         elif tar_unproc:
-            pool.apply_async(func= register_target, args= (imgPath, templatePath, ))
+            pool.apply_async(
+                func=register_target, args=(
+                    imgPath, templatePath, ))
         elif tar_harm:
-            pool.apply_async(func= register_harmonized, args= (imgPath, warp2mni, trans2mni, templatePath, siteName, ))
+            pool.apply_async(
+                func=register_harmonized,
+                args=(
+                    imgPath,
+                    warp2mni,
+                    trans2mni,
+                    templatePath,
+                    siteName,
+                ))
 
     pool.close()
     pool.join()
@@ -148,19 +174,19 @@ def analyzeStat(file, templatePath):
     :return: mean of the images
     '''
 
-    skel= load(pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
-    skel_mask= (skel.get_data()>0)*1.
+    skel = load(pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
+    skel_mask = (skel.get_data() > 0) * 1.
 
     imgs, _ = read_caselist(file)
 
-    meanAttr=[]
+    meanAttr = []
     for imgPath in imgs:
         inPrefix = imgPath.split('.nii')[0]
         prefix = psplit(inPrefix)[-1]
 
-        faImg= pjoin(templatePath, prefix + f'_InMNI_FA.nii.gz')
-        data= load(faImg).get_data()
-        temp= data*skel_mask
-        meanAttr.append(temp[temp>0].mean())
+        faImg = pjoin(templatePath, prefix + f'_InMNI_FA.nii.gz')
+        data = load(faImg).get_data()
+        temp = data * skel_mask
+        meanAttr.append(temp[temp > 0].mean())
 
     return meanAttr

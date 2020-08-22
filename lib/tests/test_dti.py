@@ -35,5 +35,6 @@ class TestDti(unittest.TestCase):
 
         dti(lowResImgPath, lowResMaskPath, inPrefix, outPrefix)
 
+
 if __name__ == '__main__':
     unittest.main()

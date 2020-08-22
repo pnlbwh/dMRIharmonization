@@ -17,17 +17,18 @@ from test_util import *
 from resampling import resampling
 from preprocess import nrrd2nifti
 
+
 class TestResample(unittest.TestCase):
 
     def test_resample(self):
-        inPath= pjoin(FILEDIR, 'connectom_prisma/connectom/A/')
-        inPrefix= pjoin(inPath, 'dwi_A_connectom_st_b1200')
+        inPath = pjoin(FILEDIR, 'connectom_prisma/connectom/A/')
+        inPrefix = pjoin(inPath, 'dwi_A_connectom_st_b1200')
 
-        lowResImgPath= inPrefix+'.nii.gz'
-        bvalPath= inPrefix+'.bval'
-        lowResMaskPath= inPrefix+'_mask.nii.gz'
+        lowResImgPath = inPrefix + '.nii.gz'
+        bvalPath = inPrefix + '.bval'
+        lowResMaskPath = inPrefix + '_mask.nii.gz'
 
-        # load signal attributes for pre-processing ----------------------------------------------------------------
+        # load signal attributes for pre-processing ---------------------------
         imgPath = nrrd2nifti(lowResImgPath)
         lowRes = load(imgPath)
         lowResImg = lowRes.get_data().astype('float')
@@ -40,16 +41,22 @@ class TestResample(unittest.TestCase):
 
         bvals, _ = read_bvals_bvecs(bvalPath, None)
 
-        sp_high= array([1.5,1.5,1.5])
+        sp_high = array([1.5, 1.5, 1.5])
 
         print('Resampling ', imgPath)
-        resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMask, lowResMaskHdr, sp_high, bvals)
-        outPrefix= inPrefix+'_resampled'
+        resampling(
+            lowResImgPath,
+            lowResMaskPath,
+            lowResImg,
+            lowResImgHdr,
+            lowResMask,
+            lowResMaskHdr,
+            sp_high,
+            bvals)
+        outPrefix = inPrefix + '_resampled'
         copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
         copyfile(inPrefix + '.bval', outPrefix + '.bval')
 
 
 if __name__ == '__main__':
     unittest.main()
-
-
