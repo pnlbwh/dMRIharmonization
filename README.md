@@ -535,8 +535,8 @@ Several files are created down the pipeline. They are organized with proper fold
     
 ## 1. Folders
 
-In each input image directory, two folders are created: `dti` and `rish`. The `dti` folder stores diffusion measures 
-and corresponding transform files. On the other hand `rish` folder stores RISH features and corresponding transform files.
+In each input image directory, two folders are created: `dti` and `harm`. The `dti` folder stores diffusion measures 
+and corresponding transform files. On the other hand `harm` folder stores RISH features and corresponding transform files.
 
 ## 2. Files
     
