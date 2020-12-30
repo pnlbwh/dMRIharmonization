@@ -29,7 +29,7 @@ def remapBval(dwi, mask, bvals, bNew):
     ratio= []
     bvalsNew= []
     for b in bvals:
-        if b:
+        if b > B0_THRESH:
             bvalsNew.append(bNew)
             if (b>1.01*bNew or b<0.99*bNew):
                 ratio.append(bNew / b)
