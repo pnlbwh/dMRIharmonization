@@ -114,11 +114,11 @@ def analyzeStat(faImgs):
     '''
 
     skel= load(pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
-    skel_mask= (skel.get_data()>0)*1.
+    skel_mask= (skel.get_fdata()>0)*1.
 
     meanAttr=[]
     for faImg in faImgs:
-        data= load(faImg).get_data()
+        data= load(faImg).get_fdata()
         temp= data*skel_mask
         meanAttr.append(temp[temp>0].mean())
 

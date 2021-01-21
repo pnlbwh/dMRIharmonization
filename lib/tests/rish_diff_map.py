@@ -53,7 +53,7 @@ scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6)
     py=[]
     for i in range(0,N_shm+1,2):
         img= nib.load(f'{prefix}_L{i}.nii.gz')
-        py.append(img.get_data())
+        py.append(img.get_fdata())
 
     pyX, pyY, pyZ = np.shape(py)[1: ]
 
@@ -64,7 +64,7 @@ scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6)
     mat=[]
     for i in range(0,N_shm+1,2):
         img= nib.load(f'{prefix}_L{i}.nii.gz')
-        mat.append(img.get_data()[:pyX, :pyY, :pyZ])
+        mat.append(img.get_fdata()[:pyX, :pyY, :pyZ])
 
         ind= int(i/2)
         save_nifti(f'diff_L{ind}.nii.gz', py[ind]-mat[ind], affine= img.affine, header= img.header)

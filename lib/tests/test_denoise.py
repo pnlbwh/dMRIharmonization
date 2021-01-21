@@ -15,7 +15,7 @@
 
 from test_util import *
 from denoising import denoising
-from preprocess import nrrd2nifti
+
 
 
 class TestDenoise(unittest.TestCase):
@@ -35,7 +35,7 @@ class TestDenoise(unittest.TestCase):
         mask = load(maskPath)
 
         print('Denoising ', imgPath)
-        dwiNew, _= denoising(dwi.get_data(), mask.get_data())
+        dwiNew, _= denoising(dwi.get_fdata(), mask.get_fdata())
         outPrefix = imgPath.split('.nii')[0] + '_denoised'
         save_nifti(outPrefix + '.nii.gz', dwiNew, dwi.affine, dwi.header)
         copyfile(inPrefix + '.bvec', outPrefix + '.bvec')
