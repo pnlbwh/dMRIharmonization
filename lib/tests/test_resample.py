@@ -15,7 +15,7 @@
 
 from test_util import *
 from resampling import resampling
-from preprocess import nrrd2nifti
+
 
 class TestResample(unittest.TestCase):
 
@@ -30,12 +30,12 @@ class TestResample(unittest.TestCase):
         # load signal attributes for pre-processing ----------------------------------------------------------------
         imgPath = nrrd2nifti(lowResImgPath)
         lowRes = load(imgPath)
-        lowResImg = lowRes.get_data().astype('float')
+        lowResImg = lowRes.get_fdata().astype('float')
         lowResImgHdr = lowRes.header
 
         maskPath = nrrd2nifti(lowResMaskPath)
         lowRes = load(maskPath)
-        lowResMask = lowRes.get_data()
+        lowResMask = lowRes.get_fdata()
         lowResMaskHdr = lowRes.header
 
         bvals, _ = read_bvals_bvecs(bvalPath, None)

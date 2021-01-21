@@ -494,7 +494,7 @@ class pipeline(cli.Application):
                 verifyNshmForAll(self.target_csv, self.N_shm)
 
         # copy provided config file to temporary directory
-        configFile= f'/tmp/harm_config_{getpid()}.ini'
+        configFile= pjoin(gettempdir(),f'harm_config_{getpid()}.ini')
         with open(configFile,'w') as f:
             f.write('[DEFAULT]\n')
             f.write(f'N_shm = {self.N_shm}\n')

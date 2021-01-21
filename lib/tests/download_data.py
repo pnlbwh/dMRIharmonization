@@ -13,7 +13,7 @@
 # View LICENSE at https://github.com/pnlbwh/dMRIharmonization/blob/master/LICENSE
 # ===============================================================================
 
-from os.path import abspath, dirname, join as pjoin
+from os.path import abspath, dirname, join as pjoin, isfile
 from os import chdir, getcwd
 import sys, shutil
 from subprocess import check_call
@@ -53,7 +53,8 @@ def main():
     test_unzip_dir= test_data.split('.')[0]
 
     chdir(pjoin(LIBDIR, 'tests'))
-    check_call(['wget', f'https://github.com/pnlbwh/Harmonization-Python/releases/download/v{__version__}/{test_data}'])
+    if not isfile(test_data):
+        check_call(['wget', f'https://github.com/pnlbwh/Harmonization-Python/releases/download/v{__version__}/{test_data}'])
     check_call(' '.join(['tar', '-xzvf', f'{test_data}']), shell=True)
 
     chdir(test_unzip_dir)

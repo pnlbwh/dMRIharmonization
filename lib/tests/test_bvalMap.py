@@ -15,7 +15,7 @@
 
 from test_util import *
 from bvalMap import remapBval
-from preprocess import nrrd2nifti
+
 from dipy.io import read_bvals_bvecs
 
 class TestBmap(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestBmap(unittest.TestCase):
         bNew= 1000.
 
         print('B value mapping ', imgPath)
-        dwiNew, bvalsNew= remapBval(dwi.get_data(), mask.get_data(), bvals, bNew)
+        dwiNew, bvalsNew= remapBval(dwi.get_fdata(), mask.get_fdata(), bvals, bNew)
 
         outPrefix = imgPath.split('.nii')[0] + '_bmapped'
         save_nifti(outPrefix + '.nii.gz', dwiNew, dwi.affine, dwi.header)

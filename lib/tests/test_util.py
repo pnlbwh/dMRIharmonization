@@ -43,7 +43,7 @@ def save_nifti(fname, data, affine, hdr=None):
     result_img.to_filename(fname)
 
 from numpy import array
-from conversion import write_bvals
+from conversion import write_bvals, nifti_write
 
 test_data= 'connectom_prisma.zip'
 test_unzip_dir= pjoin(FILEDIR, test_data.split('.')[0])
@@ -51,3 +51,20 @@ if not exists(pjoin(FILEDIR, test_unzip_dir)):
     download_script= pjoin(FILEDIR, 'download_data.py')
     with open(download_script) as f:
         check_call(f'{download_script} {test_data}', shell= True)
+
+
+# convert NRRD to NIFTI on the fly
+def nrrd2nifti(imgPath):
+
+    if imgPath.endswith('.nrrd'):
+        niftiImgPrefix= imgPath.split('.nrrd')[0]
+    elif imgPath.endswith('.nhdr'):
+        niftiImgPrefix= imgPath.split('.nhdr')[0]
+    else:
+        return imgPath
+
+    nifti_write(imgPath, niftiImgPrefix)
+
+    return niftiImgPrefix+'.nii.gz'
+    
+    

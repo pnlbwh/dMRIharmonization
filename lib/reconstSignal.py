@@ -23,7 +23,8 @@ from rish import rish
 eps= 2.2204e-16
 SCRIPTDIR= dirname(__file__)
 config = ConfigParser()
-config.read(f'/tmp/harm_config_{getpid()}.ini')
+config.read(pjoin(gettempdir(),f'harm_config_{getpid()}.ini'))
+
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
 debug = int(config['DEFAULT']['debug'])

@@ -117,7 +117,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
 
         # load python
         img_py_obj = nib.load(imgPath_py)
-        img_py= img_py_obj.get_data()
+        img_py= img_py_obj.get_fdata()
         # keep only the first b0
         bvals = np.array(read_bvals(imgPath_py.split('.nii')[0] + '.bval'))
         img_py= stack_one_b0(bvals, dwi= img_py)
@@ -126,7 +126,7 @@ def dwi_difference(imgPath_given_mat, imgPath_given_py, caselist):
         pyX, pyY, pyZ, _ = img_py.shape
 
         # load matlab
-        img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ,: ]
+        img_mat = nib.load(imgPath_mat).get_fdata()[:pyX, :pyY, :pyZ,: ]
         img_mat= img_mat.astype('float64')
 
         # obtain case wise difference
@@ -175,12 +175,12 @@ def dti_diff(imgPath_given_mat, imgPath_given_py, caselist):
 
         # load python
         img_py_obj = nib.load(imgPath_py)
-        img_py = img_py_obj.get_data()
+        img_py = img_py_obj.get_fdata()
         img_py= img_py.astype('float64')
         pyX, pyY, pyZ = img_py.shape
 
         # load matlab
-        img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ]
+        img_mat = nib.load(imgPath_mat).get_fdata()[:pyX, :pyY, :pyZ]
         img_mat= img_mat.astype('float64')
 
         # obtain case wise difference
@@ -213,12 +213,12 @@ def rish_diff(imgPath_given_mat, imgPath_given_py, caselist, N_shm= 6):
 
             # load python
             img_py_obj = nib.load(imgPath_py)
-            img_py= img_py_obj.get_data()
+            img_py= img_py_obj.get_fdata()
             img_py= img_py.astype('float64')
             pyX, pyY, pyZ = img_py.shape
 
             # load matlab
-            img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ]
+            img_mat = nib.load(imgPath_mat).get_fdata()[:pyX, :pyY, :pyZ]
             img_mat= img_mat.astype('float64')
 
             # obtain case wise difference
@@ -250,12 +250,12 @@ def scale_diff(imgPath_given_mat, imgPath_given_py, N_shm= 6):
 
         # load python
         img_py_obj = nib.load(imgPath_py)
-        img_py = img_py_obj.get_data()
+        img_py = img_py_obj.get_fdata()
         img_py= img_py.astype('float64')
         pyX, pyY, pyZ = img_py.shape
 
         # load matlab
-        img_mat = nib.load(imgPath_mat).get_data()[:pyX, :pyY, :pyZ]
+        img_mat = nib.load(imgPath_mat).get_fdata()[:pyX, :pyY, :pyZ]
         img_mat= img_mat.astype('float64')
 
         # obtain case wise difference
