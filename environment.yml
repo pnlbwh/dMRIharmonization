@@ -1,0 +1,24 @@
+name: harmonization
+
+channels:
+    - conda-forge
+    - pnlbwh
+
+dependencies:
+    - python>=3.0
+    - ipython
+    - numpy
+    - nibabel
+    - pandas
+    - dipy
+    - scipy
+    - scikit-image
+    - psutil
+    - plumbum
+    - ants
+    - conda-build
+    - git
+    - pip
+    - pip:
+        - git+https://github.com/mhe/pynrrd.git
+        - git+https://github.com/pnlbwh/conversion.git

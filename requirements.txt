@@ -1,0 +1,9 @@
+numpy
+nibabel
+dipy
+scipy
+scikit-image
+psutil
+plumbum
+pynrrd
+git+https://github.com/pnlbwh/conversion.git
