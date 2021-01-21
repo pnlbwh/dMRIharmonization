@@ -23,7 +23,7 @@ ROOTDIR= abspath(pjoin(SCRIPTDIR, '..'))
 mniTmp = pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA.nii.gz')
 
 config = ConfigParser()
-config.read(f'/tmp/harm_config_{getpid()}.ini')
+config.read(pjoin(gettempdir(),f'harm_config_{getpid()}.ini'))
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
 

@@ -18,6 +18,7 @@ from subprocess import check_call, Popen
 from shutil import copyfile, rmtree
 import numpy as np
 import sys
+from tempfile import gettempdir
 
 SCRIPTDIR= abspath(dirname(__file__))
 

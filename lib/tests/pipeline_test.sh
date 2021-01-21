@@ -66,7 +66,7 @@ write_list prisma.txt
 --tar_name PRISMA \
 --nproc -1 \
 --create --process --debug || EXIT 'harmonization.py with --create --process --debug failed'
-
+exit
 # recompute statistics
 ../../harmonization.py \
 --template ./template/ \
