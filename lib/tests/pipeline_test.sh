@@ -39,6 +39,10 @@ __version__=`echo $v | xargs`
 test_data=connectom_prisma # change this value if test data name is changed
 if [ ! -f ${test_data}.zip ]
 then
+    # we have been providing the same test data for the last couple of releases
+    # so no need to spend time uploading test data with each release for the forseeable future
+    # rather download from v2.0
+    __version__=2.0
     wget https://github.com/pnlbwh/dMRIharmonization/releases/download/v${__version__}/${test_data}.zip
 fi
 

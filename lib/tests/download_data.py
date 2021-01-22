@@ -54,6 +54,10 @@ def main():
 
     chdir(pjoin(LIBDIR, 'tests'))
     if not isfile(test_data):
+        # we have been providing the same test data for the last couple of releases
+        # so no need to spend time uploading test data with each release for the forseeable future
+        # rather download from v2.0
+        __version__=2.0
         check_call(['wget', f'https://github.com/pnlbwh/Harmonization-Python/releases/download/v{__version__}/{test_data}'])
     check_call(' '.join(['tar', '-xzvf', f'{test_data}']), shell=True)
 
