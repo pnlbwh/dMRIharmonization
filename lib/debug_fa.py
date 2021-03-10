@@ -100,7 +100,7 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
     antsReg(dmTmp, maskTmp, dmImg, outPrefix)
 
     for dm in diffusionMeasures:
-        output = pjoin(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
+         output = pjoin(templatePath, prefix + '_'+dm+'_ToTmpWarped.nii.gz')
 
         moving = pjoin(directory, 'dti', prefix + f'_{dm}.nii.gz')
         # warp diffusion measure to template space first, then to MNI space
@@ -108,8 +108,21 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
             '-d', '3',
             '-i', moving,
             '-o', output,
+            '-r', dmTmp,
+            '-t', warp2tmp, trans2tmp
+        ] & FG
+
+        output = pjoin(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
+
+        moving = pjoin(templatePath, prefix + '_'+dm+'_ToTmpWarped.nii.gz')
+
+
+        antsApplyTransforms[
+            '-d', '3',
+            '-i', moving,
+            '-o', output,
             '-r', mniTmp,
-            '-t', warp2mni, trans2mni, warp2tmp, trans2tmp
+            '-t', warp2mni, trans2mni
         ] & FG
 
 
