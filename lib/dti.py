@@ -48,7 +48,7 @@ def dti(imgPath, maskPath, inPrefix, outPrefix, tool='FSL'):
 
 
     rms = np.sqrt(np.mean(np.power(masked_vol,2), axis=3))
-    ga = np.std(masked_vol, axis=3)/(rms+0.000000001)
+    ga = np.std(masked_vol, axis=3)/(rms+10e-9)
     ga3D = ga.reshape(masked_vol.shape[0], masked_vol.shape[1], masked_vol.shape[2])
     gfa_vol = np.nan_to_num(ga3D)
 
