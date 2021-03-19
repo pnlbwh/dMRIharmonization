@@ -30,7 +30,6 @@ with warnings.catch_warnings():
     from dipy.io import read_bvals_bvecs
     from dipy.core.gradients import gradient_table
     from dipy.reconst.shm import QballModel
-    from dipy.reconst.odf import gfa
     from dipy.segment.mask import applymask
     import dipy.reconst.dti as dipyDti
 
