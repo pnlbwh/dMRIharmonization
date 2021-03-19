@@ -42,7 +42,7 @@ def register_reference(imgPath, warp2mni, trans2mni, templatePath):
         # warped data are pjoin(directory, 'dti', prefix + f'_WarpedFA.nii.gz')
         moving = pjoin(templatePath, prefix + f'_Warped{dm}.nii.gz')
 
-        # so warp diffusion measure to MNI space directly
+        # so warp diffusion measures that are in template space to MNI space
         antsApplyTransforms[
             '-d', '3',
             '-i', moving,
@@ -72,7 +72,7 @@ def register_target(imgPath, templatePath):
         output = pjoin(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
 
         moving = pjoin(directory, 'dti', prefix + f'_{dm}.nii.gz')
-        # warp diffusion measure to template space first, then to MNI space
+        # warp diffusion measures to MNI space directly
         antsApplyTransforms[
             '-d', '3',
             '-i', moving,
@@ -103,7 +103,7 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
         output = pjoin(templatePath, prefix + f'_{dm}_ToTmpWarped.nii.gz')
 
         moving = pjoin(directory, 'dti', prefix + f'_{dm}.nii.gz')
-        # warp diffusion measure to template space first, then to MNI space
+        # warp diffusion measures to template space first, then to MNI space
         antsApplyTransforms[
             '-d', '3',
             '-i', moving,
@@ -156,10 +156,6 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
 
 
 def analyzeStat(file, templatePath):
-    '''
-    :param file: list of (FA or MD or GFA) that are already in MNI space
-    :return: mean of the images
-    '''
 
     skel= load(pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
     skel_mask= (skel.get_data()>0)*1.
