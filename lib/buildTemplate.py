@@ -18,6 +18,7 @@ from glob import glob
 from scipy.ndimage import binary_opening, generate_binary_structure
 from scipy.ndimage.filters import gaussian_filter
 from util import *
+from plumbum import local
 
 eps= 2.2204e-16
 SCRIPTDIR= dirname(__file__)
@@ -85,17 +86,21 @@ def createAntsCaselist(imgs, file):
 def antsMult(caselist, outPrefix):
     
     N_core=getenv('TEMPLATE_CONSTRUCT_CORES')
-    check_call((' ').join([pjoin(SCRIPTDIR, 'antsMultivariateTemplateConstruction2_fixed_random_seed.sh'),
-                           '-d', '3',
-                           '-g', '0.2',
-                           '-k', '2',
-                           '-t', "BSplineSyN[0.1,26,0]",
-                           '-r', '1',
-                           '-c', '2',
-                           '-j', str(N_core) if N_core else str(N_proc),
-                           '-f', '8x4x2x1',
-                           '-o', outPrefix,
-                           caselist]), shell= True)
+
+    # launch antsMultivariateTemplateConstruction2.sh from within template directory
+    # https://github.com/pnlbwh/dMRIharmonization/issues/80
+    with local.cwd(dirname(caselist)):
+        check_call((' ').join([pjoin(SCRIPTDIR, 'antsMultivariateTemplateConstruction2_fixed_random_seed.sh'),
+                               '-d', '3',
+                               '-g', '0.2',
+                               '-k', '2',
+                               '-t', "BSplineSyN[0.1,26,0]",
+                               '-r', '1',
+                               '-c', '2',
+                               '-j', str(N_core) if N_core else str(N_proc),
+                               '-f', '8x4x2x1',
+                               '-o', outPrefix,
+                               caselist]), shell= True)
 
 
 def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
