@@ -100,7 +100,7 @@ def antsMult(caselist, outPrefix):
                                '-j', str(N_core) if N_core else str(N_proc),
                                '-f', '8x4x2x1',
                                '-o', outPrefix,
-                               caselist]), shell= True)
+                               basename(caselist)]), shell= True)
 
 
 def dti_stat(siteName, imgs, masks, templatePath, templateHdr):
