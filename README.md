@@ -129,9 +129,9 @@ should have similar b-values (i.e, if one site has b-value 1000, the other one s
 
 If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact -
 
-*skarayumak@bwh.harvard.edu*
+*skarayumak[at]bwh[dot]harvard[dot]edu*
 
-*tbillah@bwh.harvard.edu*
+*tbillah[at]bwh[dot]harvard[dot]edu*
 
 
 # Dependencies
