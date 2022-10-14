@@ -237,8 +237,9 @@ dMRIharmonization toolbox is provided with a debugging capability to test how go
 harmonization. For debug to work and **tests** to run, download the following data from [IIT HUMAN BRAIN ATLAS](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) 
 and place them in `dMRIharmonization/IITAtlas/` directory:
 
-* [IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/6898/IITmean_FA.nii.gz) 
-* [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/6897/IITmean_FA_skeleton.nii.gz)
+
+* [IITmean_FA.nii.gz](https://www.nitrc.org/frs/download.php/11271/IITmean_FA.nii.gz)
+* [IITmean_FA_skeleton.nii.gz](https://www.nitrc.org/frs/download.php/11270/IITmean_FA_skeleton.nii.gz)
 
 
 ## 4. Configure your environment
