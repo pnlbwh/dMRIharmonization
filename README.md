@@ -121,10 +121,10 @@ demographic variable.
     
     (iii) eddy current and head motion correction
     
-5. *dMRIharmonization* supports harmonization of data with similar b-values (i.e., one site with b-value of 1000 and 
-another with a b-value of 2500 is not supported currently). However, *multi-shell-dMRIharmonization* is under development 
-at https://github.com/pnlbwh/multi-shell-dMRIharmonization . For the multi-shell algorithm, b-values in each b-shell 
-should have similar b-values (i.e, if one site has b-value 1000, the other one should have in the range [900,1100]).
+5. *dMRIharmonization* is for single shell b-values (e.g. 900, 1000, 1100--all of them can be binned to one 1000 shell).
+   For multiple shells with distinct separation, see *multi-shell-dMRIharmonization* at https://github.com/pnlbwh/multi-shell-dMRIharmonization .
+   For the multi-shell algorithm, b-values in each b-shell should still have similar b-values
+   (e.g. if one site has b-value 1000, the other one should have in the range [900,1100]).
 
 
 If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact -
