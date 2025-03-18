@@ -1,0 +1,3 @@
+[submodule "dipy"]
+	path = dipy
+	url = https://github.com/dipy/dipy.git
