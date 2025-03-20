@@ -152,18 +152,18 @@ def template_masking(refMaskPath, targetMaskPath, templatePath, siteName):
     ref= load(refMaskPath)
     target= load(targetMaskPath)
 
-    templateMask= applymask(ref.get_data(), target.get_data())
+    templateMask= applymask(ref.get_fdata(), target.get_fdata())
 
     save_nifti(pjoin(templatePath, 'templateMask.nii.gz'), templateMask.astype('uint8'), ref.affine, ref.header)
 
     for dm in diffusionMeasures:
         fileName= pjoin(templatePath, f'Mean_{siteName}_{dm}.nii.gz')
         img= load(fileName)
-        save_nifti(fileName, applymask(img.get_data(), templateMask), img.affine, img.header)
+        save_nifti(fileName, applymask(img.get_fdata(), templateMask), img.affine, img.header)
 
         fileName= pjoin(templatePath, f'Std_{siteName}_{dm}.nii.gz')
         img= load(fileName)
-        save_nifti(fileName, applymask(img.get_data(), templateMask), img.affine, img.header)
+        save_nifti(fileName, applymask(img.get_fdata(), templateMask), img.affine, img.header)
 
 
     return templateMask

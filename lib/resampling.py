@@ -144,7 +144,7 @@ def resampling(lowResImgPath, lowResMaskPath, lowResImg, lowResImgHdr, lowResMas
     p.wait()
 
     check_call(['rm', highResB0PathTmp])
-    b0_gibs = load(highResB0Path).get_data()
+    b0_gibs = load(highResB0Path).get_fdata()
     np.nan_to_num(b0_gibs).clip(min= 0., out= b0_gibs) # using min= 1. is unnecessary
 
     # defining lh_max and lh_min separately to deal with memory error

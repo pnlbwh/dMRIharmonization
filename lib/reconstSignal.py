@@ -140,12 +140,12 @@ def ring_masking(directory, prefix, maskPath, shm_coeff, b0, qb_model, hdr):
     mapped_cs= []
     shs_same_level= [[0, 1], [1, 6], [6, 15], [15, 28], [28, 45]]
 
-    mask= load(maskPath).get_data()
+    mask= load(maskPath).get_fdata()
     for i in range(0, N_shm+1, 2):
 
         # load data and mask
         fileName= pjoin(directory, 'harm', f'Scale_L{i}_{prefix}.nii.gz')
-        img= load(fileName).get_data()
+        img= load(fileName).get_fdata()
 
         if i==0: # compute the skullRingMask from 0th shm
 

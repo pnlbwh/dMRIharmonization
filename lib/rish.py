@@ -19,10 +19,10 @@ from util import *
 def rish(imgPath, maskPath, inPrefix, outPrefix, N_shm, qb_model= None):
 
     img= load(imgPath)
-    data= img.get_data()
+    data= img.get_fdata()
     affine= img.affine
     hdr= img.header
-    mask_data= load(maskPath).get_data()
+    mask_data= load(maskPath).get_fdata()
 
     if not qb_model:
         print('Computing shm_coeff of ', imgPath)

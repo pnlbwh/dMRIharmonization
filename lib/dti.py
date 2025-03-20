@@ -17,7 +17,7 @@ def dti(imgPath, maskPath, inPrefix, outPrefix, tool='FSL'):
 
     vol = load(imgPath)
     mask = load(maskPath)
-    masked_vol = applymask(vol.get_data(), mask.get_data())
+    masked_vol = applymask(vol.get_fdata(), mask.get_fdata())
 
     if tool=='DIPY':
         print('dipy dtifit ', imgPath)
