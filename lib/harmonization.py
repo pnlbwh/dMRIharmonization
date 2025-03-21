@@ -14,7 +14,7 @@
 # ===============================================================================
 
 from plumbum import cli
-from distutils.spawn import find_executable
+from shutil import which
 import multiprocessing
 from conversion import read_imgs_masks
 import io
@@ -469,7 +469,7 @@ class pipeline(cli.Application):
             'unring.a64']
 
         for cmd in external_commands:
-            exe= find_executable(cmd)
+            exe= which(cmd)
             if not exe:
                 raise EnvironmentError(f'{cmd} not found')
 
