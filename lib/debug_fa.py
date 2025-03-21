@@ -158,7 +158,7 @@ def sub2tmp2mni(templatePath, siteName, caselist, ref= False, tar_unproc= False,
 def analyzeStat(file, templatePath):
 
     skel= load(pjoin(ROOTDIR, 'IITAtlas', 'IITmean_FA_skeleton.nii.gz'))
-    skel_mask= (skel.get_data()>0)*1.
+    skel_mask= (skel.get_fdata()>0)*1.
 
     imgs, _ = read_caselist(file)
 
@@ -168,7 +168,7 @@ def analyzeStat(file, templatePath):
         prefix = psplit(inPrefix)[-1]
 
         faImg= pjoin(templatePath, prefix + f'_InMNI_FA.nii.gz')
-        data= load(faImg).get_data()
+        data= load(faImg).get_fdata()
         temp= data*skel_mask
         meanAttr.append(temp[temp>0].mean())
 

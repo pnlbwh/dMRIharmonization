@@ -90,12 +90,12 @@ def preprocessing(imgPath, maskPath):
     # load signal attributes for pre-processing
     imgPath= nrrd2nifti(imgPath)
     lowRes = load(imgPath)
-    lowResImg = lowRes.get_data().astype('float')
+    lowResImg = lowRes.get_fdata().astype('float')
     lowResImgHdr = lowRes.header
 
     maskPath= nrrd2nifti(maskPath)
     lowRes = load(maskPath)
-    lowResMask = lowRes.get_data()
+    lowResMask = lowRes.get_fdata()
     lowResMaskHdr = lowRes.header
 
     lowResImg = applymask(lowResImg, lowResMask)
