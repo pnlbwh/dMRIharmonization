@@ -234,7 +234,7 @@ the prerequisite libraries:
 ## 3. Download IIT templates
 
 dMRIharmonization toolbox is provided with a debugging capability to test how good has been the 
-harmonization. For debug to work and **tests** to run, download the following data from [IIT HUMAN BRAIN ATLAS](http://www.iit.edu/~mri/IITHumanBrainAtlas.html) 
+harmonization. For debug to work and **tests** to run, download the following data from [IIT Human Brain Atlas](https://www.nitrc.org/projects/iit) 
 and place them in `dMRIharmonization/IITAtlas/` directory:
 
 
