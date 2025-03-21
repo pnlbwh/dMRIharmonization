@@ -166,23 +166,34 @@ def common_processing(caselist):
     imgs, masks = read_caselist(caselist)
 
     # compute dti_harm of unprocessed data
-    pool = multiprocessing.Pool(N_proc)
-    for imgPath,maskPath in zip(imgs,masks):
-        pool.apply_async(func= dti_harm, args= (imgPath,maskPath))
-    pool.close()
-    pool.join()
+    if N_proc==1:
+        for imgPath,maskPath in zip(imgs,masks):
+            dti_harm(imgPath,maskPath)
+
+    elif N_proc>1:
+        pool = multiprocessing.Pool(N_proc)
+        for imgPath,maskPath in zip(imgs,masks):
+            pool.apply_async(func= dti_harm, args= (imgPath,maskPath))
+        pool.close()
+        pool.join()
 
 
     # preprocess data
-    res=[]
-    pool = multiprocessing.Pool(N_proc)
-    for imgPath,maskPath in zip(imgs,masks):
-        res.append(pool.apply_async(func= preprocessing, args= (imgPath,maskPath)))
-    
-    attributes= [r.get() for r in res]
-    
-    pool.close()
-    pool.join()
+    if N_proc==1:
+        attributes=[]
+        for imgPath,maskPath in zip(imgs,masks):
+            attributes.append(preprocessing(imgPath,maskPath))
+
+    elif N_proc>1:
+        res=[]
+        pool = multiprocessing.Pool(N_proc)
+        for imgPath,maskPath in zip(imgs,masks):
+            res.append(pool.apply_async(func= preprocessing, args= (imgPath,maskPath)))
+        
+        attributes= [r.get() for r in res]
+        
+        pool.close()
+        pool.join()
 
 
     f = open(caselist + '.modified', 'w')
@@ -194,11 +205,16 @@ def common_processing(caselist):
 
 
     # compute dti_harm of preprocessed data
-    pool = multiprocessing.Pool(N_proc)
-    for imgPath,maskPath in zip(imgs,masks):
-        pool.apply_async(func= dti_harm, args= (imgPath,maskPath))
-    pool.close()
-    pool.join()
+    if N_proc==1:
+        for imgPath,maskPath in zip(imgs,masks):
+            dti_harm(imgPath,maskPath)
+
+    elif N_proc>1:
+        pool = multiprocessing.Pool(N_proc)
+        for imgPath,maskPath in zip(imgs,masks):
+            pool.apply_async(func= dti_harm, args= (imgPath,maskPath))
+        pool.close()
+        pool.join()
 
 
     if debug:
