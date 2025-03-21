@@ -412,22 +412,22 @@ class pipeline(cli.Application):
         from datetime import datetime
         from harm_plot import generate_csv, harm_plot
 
-        print('\n\nComputing statistics\n\n')
+        print('\n\nComputing statistics:')
         
-        print(f'{self.reference} site: ')
+        print(f'{self.reference} site')
         ref_mean = analyzeStat(self.ref_csv, self.templatePath)
         generate_csv(self.ref_csv, ref_mean, pjoin(self.templatePath, self.reference))
 
-        print(f'{self.target} site before harmonization: ')
+        print(f'{self.target} site before harmonization')
         target_mean_before = analyzeStat(self.tar_unproc_csv, self.templatePath)
         generate_csv(self.tar_unproc_csv, target_mean_before, pjoin(self.templatePath, self.target+'_before'))
 
-        print(f'{self.target} site after harmonization: ')
+        print(f'{self.target} site after harmonization')
         target_mean_after = analyzeStat(self.harm_csv, self.templatePath)
         generate_csv(self.harm_csv, target_mean_after, pjoin(self.templatePath, self.target+'_after'))
 
         
-        print('\n\nPrinting statistics\n\n')
+        print('\n\nPrinting statistics:')
         # save statistics for future
         statFile= pjoin(self.templatePath, 'meanFAstat.csv')
         with open(statFile, 'a') as f:
