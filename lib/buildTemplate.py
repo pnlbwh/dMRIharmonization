@@ -87,6 +87,13 @@ def antsMult(caselist, outPrefix):
     
     N_core=getenv('TEMPLATE_CONSTRUCT_CORES')
 
+    # for reasons whatsoever, N_proc is not available here though it is defined globally
+    # hence, re-read it
+    N_proc = config['DEFAULT']['N_proc']
+    if N_proc=='1':
+        # at least 2 cores are required for template construction
+        N_proc=2
+
     # launch antsMultivariateTemplateConstruction2.sh from within template directory
     # https://github.com/pnlbwh/dMRIharmonization/issues/80
     with local.cwd(dirname(caselist)):

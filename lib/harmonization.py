@@ -15,7 +15,7 @@
 
 from plumbum import cli
 from distutils.spawn import find_executable
-import multiprocessing, psutil
+import multiprocessing
 from conversion import read_imgs_masks
 import io
 
@@ -23,7 +23,7 @@ from util import *
 
 from determineNshm import verifyNshmForAll, determineNshm
 
-N_CPU= psutil.cpu_count()
+N_CPU= multiprocessing.cpu_count()
 SCRIPTDIR= dirname(__file__)
 
 def check_csv(file, force):
@@ -233,12 +233,17 @@ class pipeline(cli.Application):
         templateHdr= load(pjoin(self.templatePath, 'template0.nii.gz')).header
 
         # warp mask, dti, and rish bands
-        pool = multiprocessing.Pool(self.N_proc)
-        for imgPath, maskPath in zip(imgs, masks):
-            pool.apply_async(func= warp_bands, args= (imgPath, maskPath, self.templatePath,))
+        if self.N_proc==1:
+            for imgPath, maskPath in zip(imgs, masks):
+                warp_bands(imgPath, maskPath, self.templatePath)
+        
+        elif self.N_proc>1:
+            pool = multiprocessing.Pool(self.N_proc)
+            for imgPath, maskPath in zip(imgs, masks):
+                pool.apply_async(func= warp_bands, args= (imgPath, maskPath, self.templatePath,))
 
-        pool.close()
-        pool.join()
+            pool.close()
+            pool.join()
 
         print('calculating dti statistics i.e. mean, std for reference site')
         refMaskPath= dti_stat(self.reference, refImgs, refMasks, self.templatePath, templateHdr)
@@ -290,26 +295,38 @@ class pipeline(cli.Application):
         if self.debug and self.ref_csv:
             check_csv(self.ref_unproc_csv, self.force)
             refImgs, refMasks= read_imgs_masks(self.ref_unproc_csv)
-            res= []
-            pool = multiprocessing.Pool(self.N_proc)
-            for imgPath, maskPath in zip(refImgs, refMasks):
-                res.append(pool.apply_async(func=preprocessing, args=(imgPath, maskPath)))
 
-            attributes = [r.get() for r in res]
+            if self.N_proc==1:
+                attributes=[]
+                for imgPath, maskPath in zip(refImgs, refMasks):
+                    attributes.append(preprocessing(imgPath, maskPath))
+            
+            elif self.N_proc>1:
+                res= []
+                pool = multiprocessing.Pool(self.N_proc)
+                for imgPath, maskPath in zip(refImgs, refMasks):
+                    res.append(pool.apply_async(func=preprocessing, args=(imgPath, maskPath)))
 
-            pool.close()
-            pool.join()
+                attributes = [r.get() for r in res]
+
+                pool.close()
+                pool.join()
 
             for i in range(len(refImgs)):
                 refImgs[i] = attributes[i][0]
                 refMasks[i] = attributes[i][1]
 
-            pool = multiprocessing.Pool(self.N_proc)
-            for imgPath, maskPath in zip(refImgs, refMasks):
-                pool.apply_async(func= approx, args=(imgPath,maskPath,))
+            if self.N_proc==1:
+                for imgPath, maskPath in zip(refImgs, refMasks):
+                    approx(imgPath,maskPath)
 
-            pool.close()
-            pool.join()
+            elif self.N_proc>1:
+                pool = multiprocessing.Pool(self.N_proc)
+                for imgPath, maskPath in zip(refImgs, refMasks):
+                    pool.apply_async(func= approx, args=(imgPath,maskPath,))
+
+                pool.close()
+                pool.join()
 
 
 
@@ -329,29 +346,45 @@ class pipeline(cli.Application):
 
         self.harm_csv= self.target_csv+'.harmonized'
         fh= open(self.harm_csv, 'w')
-        pool = multiprocessing.Pool(self.N_proc)
-        res= []
-        for imgPath, maskPath in zip(targetImgs, targetMasks):
-            res.append(pool.apply_async(func= reconst, args= (imgPath, maskPath, moving, self.templatePath,)))
+        if self.N_proc==1:
+            res=[]
+            for imgPath, maskPath in zip(targetImgs, targetMasks):
+                res.append(reconst(imgPath, maskPath, moving, self.templatePath))
 
-        for r in res:
-            harmImg, harmMask= r.get()
-            fh.write(harmImg + ',' + harmMask + '\n')
+            for r in res:
+                harmImg, harmMask= r
+                fh.write(harmImg + ',' + harmMask + '\n')
+
+        elif self.N_proc>1:
+            pool = multiprocessing.Pool(self.N_proc)
+            res= []
+            for imgPath, maskPath in zip(targetImgs, targetMasks):
+                res.append(pool.apply_async(func= reconst, args= (imgPath, maskPath, moving, self.templatePath,)))
+
+            for r in res:
+                harmImg, harmMask= r.get()
+                fh.write(harmImg + ',' + harmMask + '\n')
 
 
-        pool.close()
-        pool.join()
+            pool.close()
+            pool.join()
 
         fh.close()
         
         
         if self.debug:
             harmImgs, harmMasks= read_imgs_masks(self.harm_csv)
-            pool = multiprocessing.Pool(self.N_proc)
-            for imgPath,maskPath in zip(harmImgs,harmMasks):
-                pool.apply_async(func= dti_harm, args= (imgPath,maskPath,))
-            pool.close()
-            pool.join()
+
+            if self.N_proc==1:
+                for imgPath,maskPath in zip(harmImgs,harmMasks):
+                    dti_harm(imgPath,maskPath)
+
+            elif self.N_proc>=1:
+                pool = multiprocessing.Pool(self.N_proc)
+                for imgPath,maskPath in zip(harmImgs,harmMasks):
+                    pool.apply_async(func= dti_harm, args= (imgPath,maskPath,))
+                pool.close()
+                pool.join()
             
         print('\n\nHarmonization completed\n\n')
 
