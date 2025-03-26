@@ -1,9 +1,7 @@
-numpy
-nibabel
-dipy
-scipy
+dipy==1.8.0
 scikit-image
-psutil
 plumbum
 pynrrd
+pandas
+matplotlib
 git+https://github.com/pnlbwh/conversion.git
