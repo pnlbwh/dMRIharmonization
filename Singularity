@@ -23,7 +23,11 @@ From: redhat/ubi9:9.5-1738643550
     rm -rf /var/cache/yum
 
     git clone --single-branch --branch shutil-and-bspline https://github.com/pnlbwh/dMRIharmonization.git
+    chmod o+w dMRIharmonization/
+    chmod o+w dMRIharmonization/lib/
+    chmod o+w dMRIharmonization/config.ini
 
+    # conda environment
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh -b -p miniconda3
     source miniconda3/bin/activate
@@ -43,6 +47,22 @@ From: redhat/ubi9:9.5-1738643550
     # MCR 2017a security updates
     wget https://ssd.mathworks.com/supportfiles/downloads/R2017a/deployment_files/R2017a/installers/glnxa64/MCR_R2017a_Update_3_glnxa64.sh
     bash MCR_R2017a_Update_3_glnxa64.sh -d=`pwd`/MATLAB_Runtime/v92
+
+    # fsl-6.0.7
+    wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py -O fslinstaller.py > /dev/null 2>&1
+    VERSION=6.0.7
+    python fslinstaller.py -V $VERSION -d $HOME/fsl-$VERSION > /dev/null 2>&1
+    FSLDIR=$HOME/fsl-$VERSION
+    . $FSLDIR/etc/fslconf/fsl.sh
+
+    # clean up sources
+    conda deactivate
+    conda clean -y --all
+    rm -rf Miniconda3-latest-Linux-x86_64.sh .cache/pip/* $MCR.zip $MCR MCR_R2017a_Update_3_glnxa64.sh fslinstaller.py
+    rm -rf /tmp/* /var/tmp/*
+    
+    # provide write permissions
+    chmod a+w $HOME
     
 
 %environment
@@ -51,15 +71,16 @@ From: redhat/ubi9:9.5-1738643550
     export USER=`whoami`
     export LANG=en_US.UTF-8
 
-    NEW_SOFT_DIR=$HOME
-    source ${NEW_SOFT_DIR}/fsl-6.0.7/activate.sh
-    MCRROOT=${NEW_SOFT_DIR}/MATLAB_Runtime/v92
-    PATH=${NEW_SOFT_DIR}/unring/fsl/:$PATH
-    CONDA_PREFIX=${NEW_SOFT_DIR}/miniconda3/envs/harmonization
+    FSLDIR=$HOME/fsl-6.0.7
+    . ${FSLDIR}/etc/fslconf/fsl.sh
+    
+    MCRROOT=$HOME/MATLAB_Runtime/v92
+    PATH=$HOME/unring/fsl/:${FSLDIR}/share/fsl/bin:$PATH
+    CONDA_PREFIX=$HOME/miniconda3/envs/harmonization
     ANTSPATH=${CONDA_PREFIX}/bin
 
     PATH=${CONDA_PREFIX}/bin:$PATH
 
-    export MCRROOT ANTSPATH PATH
+    export MCRROOT ANTSPATH PATH FSLDIR
 
 
