@@ -22,10 +22,8 @@ From: redhat/ubi9:9.5-1738643550
     yum clean all
     rm -rf /var/cache/yum
 
-    git clone --single-branch --branch shutil-and-bspline https://github.com/pnlbwh/dMRIharmonization.git
-    chmod o+w dMRIharmonization/
-    chmod o+w dMRIharmonization/lib/
-    chmod o+w dMRIharmonization/config.ini
+    REPO=dMRIharmonization
+    git clone --single-branch --branch shutil-and-bspline https://github.com/pnlbwh/$REPO.git
 
     # conda environment
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -33,7 +31,7 @@ From: redhat/ubi9:9.5-1738643550
     source miniconda3/bin/activate
     conda create -y -n harmonization -c conda-forge --override-channels python=3.8
     conda activate harmonization
-    pip install -r dMRIharmonization/requirements.txt
+    pip install -r $REPO/requirements.txt
     conda install -y pnlbwh::ants
 
     # MCR 2017a
@@ -54,6 +52,9 @@ From: redhat/ubi9:9.5-1738643550
     python fslinstaller.py -V $VERSION -d $HOME/fsl-$VERSION > /dev/null 2>&1
     FSLDIR=$HOME/fsl-$VERSION
     . $FSLDIR/etc/fslconf/fsl.sh
+    
+    # unring
+    git clone https://bitbucket.org/reisert/unring.git
 
     # clean up sources
     conda deactivate
