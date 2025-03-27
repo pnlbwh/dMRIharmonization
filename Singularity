@@ -59,7 +59,6 @@ From: redhat/ubi9:9.5-1738643550
     conda deactivate
     conda clean -y --all
     rm -rf Miniconda3-latest-Linux-x86_64.sh .cache/pip/* $MCR.zip $MCR MCR_R2017a_Update_3_glnxa64.sh fslinstaller.py
-    rm -rf /tmp/* /var/tmp/*
     
     # provide write permissions
     chmod a+w $HOME
