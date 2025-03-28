@@ -19,7 +19,7 @@ From: redhat/ubi9:9.5-1738643550
 
     # install required libraries
     yum -y install wget file bzip2 vim git make unzip \
-    libxcrypt-compat libXext libXt
+    libxcrypt-compat libXext libXt fftw
     yum clean all
     rm -rf /var/cache/yum
 
@@ -81,7 +81,9 @@ From: redhat/ubi9:9.5-1738643550
     ANTSPATH=${CONDA_PREFIX}/bin
 
     PATH=${CONDA_PREFIX}/bin:$PATH
+    
+    MPLCONFIGDIR=/tmp/
 
-    export MCRROOT ANTSPATH PATH FSLDIR
+    export MCRROOT ANTSPATH PATH FSLDIR MPLCONFIGDIR
 
 
