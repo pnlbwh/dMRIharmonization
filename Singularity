@@ -18,7 +18,8 @@ From: redhat/ubi9:9.5-1738643550
     export HOME=`pwd`
 
     # install required libraries
-    yum -y install wget file bzip2 vim git make unzip
+    yum -y install wget file bzip2 vim git make unzip \
+    libxcrypt-compat libXext libXt
     yum clean all
     rm -rf /var/cache/yum
 
