@@ -5,20 +5,15 @@ channels:
     - pnlbwh
 
 dependencies:
-    - python>=3.0
-    - ipython
-    - numpy
-    - nibabel
+    - python=3.8
     - pandas
-    - dipy
-    - scipy
+    - dipy=1.8.0
     - scikit-image
-    - psutil
     - plumbum
+    - matplotlib
     - ants
-    - conda-build
     - git
     - pip
     - pip:
-        - git+https://github.com/mhe/pynrrd.git
+        - pynrrd
         - git+https://github.com/pnlbwh/conversion.git
