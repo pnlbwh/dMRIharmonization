@@ -138,10 +138,6 @@ class pipeline(cli.Application):
         help= 'target site name',
         mandatory= True)
 
-    stats = cli.Flag(
-        '--stats',
-        help='print statistics of all sites, useful for recomputing --debug statistics separately')
-
     verbose= cli.Flag(
         '--verbose',
         help='print everything to STDOUT',
@@ -203,6 +199,7 @@ class pipeline(cli.Application):
             
         # load templateHdr
         templateHdr= load(template0).header
+
 
         # warp mask, dti, and rish bands
         if self.N_proc==1:
@@ -309,8 +306,8 @@ class pipeline(cli.Application):
 
         # reconstSignal steps ------------------------------------------------------------------------------------------
 
+        # read target image list
         moving= pjoin(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
-
 
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
@@ -374,7 +371,7 @@ class pipeline(cli.Application):
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
 
-        
+
         self.showStat()
 
 
@@ -429,9 +426,9 @@ class pipeline(cli.Application):
 
     def sanityCheck(self):
 
-        if not (self.create or self.process or self.debug or self.stats):
+        if not (self.create or self.process or self.debug):
             raise AttributeError('No option selected, ' 
-                                 'specify one (or many of) creation, harmonization, debug, and stats flags')
+                                 'specify one (or many of) creation, harmonization, and debug flags')
 
         # check ants commands
         external_commands= [
@@ -461,41 +458,42 @@ class pipeline(cli.Application):
             self.ref_unproc_csv= self.ref_csv.strip('.modified')
         self.tar_unproc_csv= self.target_csv.strip('.modified')
 
-        if not self.stats:
-            # check appropriateness of N_shm
-            if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
-                raise ValueError('2<= --nshm <=8')
+
+        # check appropriateness of N_shm
+        if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
+            raise ValueError('2<= --nshm <=8')
 
 
-            # determine N_shm in default mode during template creation
-            if self.N_shm==-1 and self.create:
-                if self.ref_csv:
-                    ref_nshm_img = read_caselist(self.ref_csv)[0][0]
-                elif self.target_csv:
-                    ref_nshm_img = read_caselist(self.target_csv)[0][0]
-
-                directory= dirname(ref_nshm_img)
-                prefix= basename(ref_nshm_img).split('.nii')[0]
-                bvalFile= pjoin(directory, prefix+'.bval')
-                self.N_shm, _= determineNshm(bvalFile)
-
-
-            # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
-            # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
-            elif self.N_shm==-1 and self.process:
-                for i in range(0,8,2):
-                    if isfile(pjoin(self.templatePath, f'Scale_L{i}.nii.gz')):
-                        self.N_shm= i
-                    else:
-                        break
-
-
-            # verify validity of provided/determined N_shm for all subjects
-            # single-shell-ness is verified inside verifyNshmForAll
+        # determine N_shm in default mode during template creation
+        if self.N_shm==-1 and self.create:
             if self.ref_csv:
-                verifyNshmForAll(self.ref_csv, self.N_shm)
-            if self.target_csv:
-                verifyNshmForAll(self.target_csv, self.N_shm)
+                ref_nshm_img = read_caselist(self.ref_csv)[0][0]
+            elif self.target_csv:
+                ref_nshm_img = read_caselist(self.target_csv)[0][0]
+
+            directory= dirname(ref_nshm_img)
+            prefix= basename(ref_nshm_img).split('.nii')[0]
+            bvalFile= pjoin(directory, prefix+'.bval')
+            self.N_shm, _= determineNshm(bvalFile)
+
+
+        # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
+        # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
+        elif self.N_shm==-1 and self.process:
+            for i in range(0,8,2):
+                if isfile(pjoin(self.templatePath, f'Scale_L{i}.nii.gz')):
+                    self.N_shm= i
+                else:
+                    break
+
+
+        # verify validity of provided/determined N_shm for all subjects
+        # single-shell-ness is verified inside verifyNshmForAll
+        if self.ref_csv:
+            verifyNshmForAll(self.ref_csv, self.N_shm)
+        if self.target_csv:
+            verifyNshmForAll(self.target_csv, self.N_shm)
+
 
         # write config file to temporary directory
         configFile= pjoin(gettempdir(),f'harm_config_{getpid()}.ini')
@@ -531,11 +529,6 @@ class pipeline(cli.Application):
         if self.create and self.process and self.debug:
             self.post_debug()
 
-        if self.stats:
-            if (self.create or self.process or self.debug):
-                raise AttributeError('--stats option is for recomputing site statistics exclusively')
-            else:
-                self.showStat()
 
         remove(configFile)
 
