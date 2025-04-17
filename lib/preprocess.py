@@ -14,7 +14,7 @@
 import multiprocessing
 from conversion import write_bvals
 from util import *
-from fileUtil import read_caselist
+from fileUtil import read_caselist, nrrd2nifti
 from denoising import denoising
 from bvalMap import remapBval
 from resampling import resampling
@@ -57,12 +57,12 @@ def dti_harm(imgPath, maskPath):
 def preprocessing(imgPath, maskPath):
 
     # load signal attributes for pre-processing
-    imgPath= nrrd2nifti(imgPath)
+    # imgPath= nrrd2nifti(imgPath)
     lowRes = load(imgPath)
     lowResImg = lowRes.get_fdata().astype('float')
     lowResImgHdr = lowRes.header
 
-    maskPath= nrrd2nifti(maskPath)
+    # maskPath= nrrd2nifti(maskPath)
     lowRes = load(maskPath)
     lowResMask = lowRes.get_fdata()
     lowResMaskHdr = lowRes.header
