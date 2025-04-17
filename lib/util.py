@@ -44,6 +44,7 @@ def save_nifti(fname, data, affine, hdr=None):
     result_img.to_filename(fname)
 
 
+# NOTE: multi-shell-dMRIharmonization takes NIFTI input only
 def convertedPath(imgPath):
 
     if imgPath.endswith('.nhdr'):
@@ -53,6 +54,9 @@ def convertedPath(imgPath):
 
     return imgPath
 
+
+def RAISE(ERR):
+    raise ERR
 
 B0_THRESH= 50.
 B_QUANT= 50.
