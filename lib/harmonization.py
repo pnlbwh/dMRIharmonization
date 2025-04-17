@@ -380,7 +380,8 @@ class pipeline(cli.Application):
         from debug_fa import analyzeStat
         from datetime import datetime
         from harm_plot import generate_csv, harm_plot
-
+        import pandas as pd
+        
         print('\n\nComputing statistics:')
         
         print(f'{self.reference} site')
@@ -399,17 +400,19 @@ class pipeline(cli.Application):
         print('\n\nPrinting statistics:')
         # save statistics for future
         statFile= pjoin(self.templatePath, 'meanFAstat.csv')
-        with open(statFile, 'a') as f:
-            f.write(datetime.now().strftime('%m/%d/%y %H:%M')+',mean meanFA,std meanFA\n')
-            
-            f.write(f'{self.reference},{np.mean(ref_mean)},{np.std(ref_mean)}\n')
-            f.write(f'{self.target}_before,{np.mean(target_mean_before)},{np.std(target_mean_before)}\n')
-            f.write(f'{self.target}_after,{np.mean(target_mean_after)},{np.std(target_mean_after)}\n')
-            
-            # print an empty line so future results, if appended, are visually separate
-            f.write('\n')
+        if isfile(statFile):
+            df= pd.read_csv(statFile)
+        else:
+            timestamp= datetime.now().strftime('%m/%d/%y %H:%M')
+            sites= [f'{self.reference}',f'{self.target}_before',f'{self.target}_after']
+            df= pd.DataFrame({timestamp:sites})
+
+        header= f'mean meanFA b{self.bshell_b}'
+        value= [np.mean(x) for x in [ref_mean, target_mean_before, target_mean_after]]
+        df= df.assign(**{header:value})
+        df.to_csv(statFile, index=False)
         
-        
+
         # print statistics on console
         with open(statFile) as f:
             print(f.read())
