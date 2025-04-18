@@ -14,7 +14,7 @@
 import multiprocessing
 from conversion import write_bvals
 from util import *
-from fileUtil import read_caselist, nrrd2nifti
+from fileUtil import read_caselist
 from denoising import denoising
 from bvalMap import remapBval
 from resampling import resampling
