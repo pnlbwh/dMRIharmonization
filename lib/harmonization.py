@@ -258,8 +258,6 @@ class pipeline(cli.Application):
             if not listdir(self.templatePath):
                 raise ValueError(f'{self.templatePath} is empty')
 
-
-
         # fit spherical harmonics on reference site
         if self.debug and self.ref_csv:
             check_csv(self.ref_unproc_csv, self.force)
