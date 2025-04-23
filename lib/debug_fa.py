@@ -26,6 +26,7 @@ config = ConfigParser()
 config.read(pjoin(gettempdir(),f'harm_config_{getpid()}.ini'))
 N_proc = int(config['DEFAULT']['N_proc'])
 diffusionMeasures = [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
+bshell_b = int(config['DEFAULT']['bshell_b'])
 
 def register_reference(imgPath, warp2mni, trans2mni, templatePath):
 
