@@ -93,7 +93,7 @@ def register_harmonized(imgPath, warp2mni, trans2mni, templatePath, siteName):
     dmImg = pjoin(directory, 'dti', prefix + f'_FA.nii.gz')
     dmTmp = pjoin(templatePath, f'Mean_{siteName}_FA.nii.gz')
     maskTmp = pjoin(templatePath, f'{siteName}_Mask.nii.gz')
-    outPrefix = pjoin(templatePath, prefix + '_FA_ToMNI')
+    outPrefix = pjoin(templatePath, prefix + '_FA_ToMNI_')
     warp2tmp = outPrefix + '1Warp.nii.gz'
     trans2tmp = outPrefix + '0GenericAffine.mat'
     # signal reconstruction might change with zero padding size, median filtering kernel size, and harmonized mask
