@@ -40,7 +40,7 @@ def register_reference(imgPath, warp2mni, trans2mni, templatePath):
         output = pjoin(templatePath, prefix + f'_InMNI_{dm}.nii.gz')
 
         # reference site have been already warped to reference template space in buildTemplate.py: warp_bands()
-        # warped data are pjoin(directory, 'dti', prefix + f'_WarpedFA.nii.gz')
+        # warped data are pjoin(templatePath, prefix, prefix + f'_WarpedFA.nii.gz')
         moving = pjoin(templatePath, prefix + f'_Warped{dm}.nii.gz')
 
         # so warp diffusion measures that are in template space to MNI space
