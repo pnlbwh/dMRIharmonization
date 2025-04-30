@@ -398,12 +398,9 @@ class pipeline(cli.Application):
         print('\n\nPrinting statistics:')
         # save statistics for future
         statFile= pjoin(self.templatePath, 'meanFAstat.csv')
-        if isfile(statFile):
-            df= pd.read_csv(statFile)
-        else:
-            timestamp= datetime.now().strftime('%m/%d/%y %H:%M')
-            sites= [f'{self.reference}',f'{self.target}_before',f'{self.target}_after']
-            df= pd.DataFrame({timestamp:sites})
+        timestamp= datetime.now().strftime('%m/%d/%y %H:%M')
+        sites= [f'{self.reference}',f'{self.target}_before',f'{self.target}_after']
+        df= pd.DataFrame({timestamp:sites})
 
         header= f'mean meanFA b{self.bshell_b}'
         value= [np.mean(x) for x in [ref_mean, target_mean_before, target_mean_after]]
