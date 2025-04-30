@@ -111,7 +111,7 @@ class pipeline(cli.Application):
     bshell_b = cli.SwitchAttr(
         '--bshell_b',
         help='bvalue of the bshell, needed for multi-shell data only',
-        mandatory= False)
+        default= 1)
 
     create = cli.Flag(
         '--create',
