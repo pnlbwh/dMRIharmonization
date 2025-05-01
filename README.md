@@ -188,12 +188,11 @@ Download a suitable version from the above, and install as follows:
 
 See details about installation [here](https://www.mathworks.com/help/compiler/install-the-matlab-runtime.html).
 
-After successful installation, you should see a suggestion about editing your LD_LIBRARY_PATH. 
-You should save the suggestion in a file `env.sh`.
+After successful installation, you should set `MCRROOT` in an environment file:
 
-    echo "export LD_LIBRARY_PATH=/path/to/v92/runtime/glnxa64:/path/to/v92/bin/glnxa64:/path/to/v92/sys/os/glnxa64:/path/to/v92/sys/opengl/lib/glnxa64:\${LD_LIBRARY_PATH}" > env.sh
+    echo "export MCRROOT=/path/to/v92" > env.sh
 
-Then, every time you run dMRIharmonization, you can just `source /path/to/env.sh` for your LD_LIBRARY_PATH to be updated.
+Then, every time you run dMRIharmonization, you can just `source /path/to/env.sh` so that `bspline` can execute.
 
 
 ### unringing
@@ -207,28 +206,13 @@ You should be able to see the help message now:
     unring.a64 --help
 
 
-**NOTE** FSL unringing executable requires Centos7 operating system.
+**NOTE** FSL unringing executable requires CentOS 7 or higher operating system e.g. RHEL 9.
     
     
 ## 2. Install pipeline
 
-Now that you have installed the prerequisite software, you are ready to install the pipeline:
-
-    git clone https://github.com/pnlbwh/dMRIharmonization.git && cd dMRIharmonization
-    conda env create -f environment.yml    # you may comment out any existing package from environment.yml
-    conda activate harmonization           # should introduce '(harmonization)' in front of each line
-
-
-Alternatively, if you already have ANTs, you can continue using your python environment by directly installing 
-the prerequisite libraries:
-
-    pip install -r requirements.txt --upgrade
-
-
-**NOTE** If other people will run *dMRIharmonization* in your lab, it may be useful to change permission of the configuration file:
-
-    chmod +w dMRIharmonization/lib/config.ini
-
+Now that you have installed the prerequisite software, you are ready to install the conda environment.
+For that, we ask you to follow the [Singularity](Singularity) file
 
 
 ## 3. Download IIT templates
@@ -259,7 +243,7 @@ If any of them does not exist, add that to your path:
 
     export PATH=$PATH:/directory/of/executable
     
-`conda activate harmonization` should already put the ANTs scripts in your path. Yet, you should set ANTSPATH as follows:
+Also, you should set `ANTSPATH` as follows:
     
     export ANTSPATH=~/miniconda3/envs/harmonization/bin/
 
