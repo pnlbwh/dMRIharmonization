@@ -268,28 +268,25 @@ Upon successful installation, you should be able to see the help message
         -v, --version                       Prints the program's version and quits
     
     Switches:
+        --bshell_b VALUE:str                bvalue of the bshell, needed for multi-shell data only; the default is 1
         --bvalMap VALUE:str                 specify a bmax to scale bvalues into
         --create                            turn on this flag to create template
         --debug                             turn on this flag to debug harmonized data (valid only with --process)
         --denoise                           turn on this flag to denoise voxel data
         --force                             turn on this flag to overwrite existing data
-        --harm_list VALUE:ExistingFile      harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...
-        --nproc VALUE:str                   number of processes/threads to use (-1 for all available, may slow down your system);
-                                            the default is 8
-        --nshm VALUE:str                    spherical harmonic order; the default is 6
+        --harm_list VALUE:ExistingFile      harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\n dwi2,mask2\n...
+        --nproc VALUE:str                   number of processes/threads to use (-1 for all available, may slow down your system); the default is 4
+        --nshm VALUE:str                    spherical harmonic order, by default maximum possible is used; the default is -1
         --nzero VALUE:str                   number of zero padding for denoising skull region during signal reconstruction; the default is 10
         --process                           turn on this flag to harmonize
-        --ref_list VALUE:ExistingFile       reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...
-        --ref_name VALUE:str                reference site name; required
+        --ref_list VALUE:ExistingFile       reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\n dwi2,mask2\n...
+        --ref_name VALUE:str                reference site name
         --resample VALUE:str                voxel size MxNxO to resample into
-        --stats                             print statistics of all sites, useful for recomputing --debug statistics separately
-        --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...
+        --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\n dwi2,mask2\n...
         --tar_name VALUE:str                target site name; required
         --template VALUE:str                template directory; required
         --travelHeads                       travelling heads
+        --verbose                           print everything to STDOUT
 
 
 The `harmonization.py` cli takes in the following arguments that are explained below.
