@@ -213,7 +213,7 @@ You should be able to see the help message now:
 ## 2. Install pipeline
 
 Now that you have installed the prerequisite software, you are ready to install the conda environment.
-For that, we ask you to follow the [Singularity](Singularity) file
+For that, we ask you to follow the [Singularity](https://github.com/pnlbwh/dMRIharmonization/blob/7dad77905e5b5d23b58c705abcd3883b6054cad2/Singularity) file
 
 
 ## 3. Download IIT templates
