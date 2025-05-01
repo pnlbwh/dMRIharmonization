@@ -4,6 +4,8 @@
 
 *dMRIharmonization* repository is developed by Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi, Brigham and Women's Hospital (Harvard Medical School).
 
+All codes have been centralized at [multi-shell-dMRIharmonization](https://github.com/pnlbwh/multi-shell-dMRIharmonization). Please use that repository.
+
 Table of Contents
 =================
 
