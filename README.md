@@ -25,7 +25,6 @@ Table of Contents
    * [Running](#running)
    * [Tests](#tests)
       * [1. pipeline](#1-pipeline)
-      * [2. unittest](#2-unittest)
    * [List of images](#list-of-images)
    * [Site names](#site-names)
    * [Multi threading](#multi-threading)
@@ -354,12 +353,6 @@ As you see in the above, after harmonization, target site (PRISMA) meanFA came c
 
 **NOTE** If there is any problem downloading test data, try manually downloading and unzipping it to `lib/tests/` folder.
 
-
-## 2. unittest
-You may run smaller and faster unittest as follows:
-    
-    python -m unittest discover -v lib/tests/    
-    
 
 # List of images
 
