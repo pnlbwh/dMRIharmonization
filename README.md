@@ -128,7 +128,7 @@ demographic variable.
    (e.g. if one site has b-value 1000, the other one should have in the range [900,1100]).
 
 
-If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact -
+If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/multi-shell-dMRIharmonization/issues) or contact -
 
 *skarayumak[at]bwh[dot]harvard[dot]edu*
 
@@ -164,7 +164,7 @@ You may ignore installation instruction for any software module that you have al
 
 ### Python 3
 
-Download [Miniconda Python 3.6 bash installer](https://docs.conda.io/en/latest/miniconda.html) (32/64-bit based on your environment):
+Download [Miniconda Python 3 bash installer](https://docs.conda.io/en/latest/miniconda.html) (32/64-bit based on your environment):
     
     sh Miniconda3-latest-Linux-x86_64.sh -b # -b flag is for license agreement
 
