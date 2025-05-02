@@ -317,10 +317,10 @@ A number of use cases can be found in [pipeline_test.sh](./lib/tests/pipeline_te
 
 # Tests
 
-A small test data is provided with each [release](https://github.com/pnlbwh/Harmonization-Python/releases). 
+A small test data is provided with each [release](https://github.com/pnlbwh/dMRIharmonization/releases).
 
 ## 1. pipeline
-You may test the whole pipeline as follows*:
+You may test the whole pipeline as follows:
     
     cd lib/tests
     ./pipeline_test.sh
