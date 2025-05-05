@@ -31,7 +31,6 @@ N_proc = int(config['DEFAULT']['N_proc'])
 denoise= int(config['DEFAULT']['denoise'])
 bvalMap= float(config['DEFAULT']['bvalMap'])
 resample= config['DEFAULT']['resample']
-bshell_b= float(config['DEFAULT']['bshell_b'])
 if resample=='0':
     resample = 0
 debug = int(config['DEFAULT']['debug'])

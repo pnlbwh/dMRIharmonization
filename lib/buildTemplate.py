@@ -26,7 +26,7 @@ config = ConfigParser()
 config.read(pjoin(gettempdir(),f'harm_config_{getpid()}.ini'))
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
-bshell_b = int(config['DEFAULT']['bshell_b'])
+bshell_b = config['DEFAULT']['bshell_b']
 diffusionMeasures= [x for x in config['DEFAULT']['diffusionMeasures'].split(',')]
 travelHeads= int(config['DEFAULT']['travelHeads'])
 verbose = int(config['DEFAULT']['verbose'])
