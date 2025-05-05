@@ -28,7 +28,7 @@ config.read(pjoin(gettempdir(),f'harm_config_{getpid()}.ini'))
 
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
-bshell_b = int(config['DEFAULT']['bshell_b'])
+bshell_b = config['DEFAULT']['bshell_b']
 debug = int(config['DEFAULT']['debug'])
 verbose = int(config['DEFAULT']['verbose'])
 n_zero = int(config['DEFAULT']['N_zero'])
