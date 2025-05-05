@@ -268,7 +268,7 @@ Upon successful installation, you should be able to see the help message
         -v, --version                       Prints the program's version and quits
     
     Switches:
-        --bshell_b VALUE:str                bvalue of the bshell, needed for multi-shell data only; the default is 1
+        --bshell_b VALUE:str                bvalue of the bshell, needed for multi-shell data only; the default is X
         --bvalMap VALUE:str                 specify a bmax to scale bvalues into
         --create                            turn on this flag to create template
         --debug                             turn on this flag to debug harmonized data (valid only with --process)
