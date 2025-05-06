@@ -54,7 +54,7 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
     directory = dirname(imgPath)
     outPrefix = pjoin(templatePath, imgPath.split('.nii')[0]) # should have _FA at the end
     prefix = psplit(outPrefix)[-1].replace('_FA', '')
-    
+
     dmTmp = pjoin(templatePath, f'Mean_{siteName}_FA.nii.gz')
     maskTmp = pjoin(templatePath, f'{siteName}_Mask.nii.gz')
     warp2tmp = outPrefix + '1Warp.nii.gz'
@@ -78,7 +78,6 @@ def register_subject(imgPath, warp2mni, trans2mni, templatePath, siteName):
     return pjoin(templatePath, prefix + f'_InMNI_FA.nii.gz')
 
 
-
 def sub2tmp2mni(templatePath, siteName, faImgs, N_proc):
 
     # obtain the transform
@@ -90,7 +89,7 @@ def sub2tmp2mni(templatePath, siteName, faImgs, N_proc):
     # template is created once, it is expected that the user wants to keep the template same during debugging
     # so in case multiple debug is needed, pass the registration
     if not isfile(warp2mni):
-        antsReg(mniTmp, None, moving, outPrefix, 8)
+        antsReg(mniTmp, None, moving, outPrefix, N_proc)
 
 
     pool= multiprocessing.Pool(N_proc)
@@ -168,6 +167,7 @@ def main():
     # register and obtain *_InMNI_FA.nii.gz
     mniFAimgs= sub2tmp2mni(templatePath, siteName, faImgs, N_proc)
     
+    
     # target harmonized
     if imgList.endswith('.modified.harmonized'):
         header = siteName+'_after'
@@ -189,7 +189,7 @@ def main():
     print(f'{siteName} site: ')
     site_means= analyzeStat(mniFAimgs)
     generate_csv(faImgs, site_means, outPrefix)
-    
+
     # save statistics for future
     statFile= pjoin(templatePath, 'meanFAstat.csv')
     with open(statFile, 'a') as f:

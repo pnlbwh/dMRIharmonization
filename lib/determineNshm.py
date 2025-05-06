@@ -16,8 +16,7 @@
 import numpy as np
 from conversion import read_bvals, read_imgs_masks
 from findBshells import findBShells
-from util import B0_THRESH
-from os.path import dirname, basename, join as pjoin
+from util import dirname, basename, pjoin, B0_THRESH
 
 def determineNshm(bvalFile):
 

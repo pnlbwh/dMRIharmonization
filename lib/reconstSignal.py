@@ -18,6 +18,7 @@ from util import *
 from buildTemplate import applyXform
 from local_med_filter import local_med_filter
 from preprocess import dti_harm, preprocessing
+import sys
 from rish import rish
 
 eps= 2.2204e-16
@@ -27,11 +28,20 @@ config.read(pjoin(gettempdir(),f'harm_config_{getpid()}.ini'))
 
 N_shm = int(config['DEFAULT']['N_shm'])
 N_proc = int(config['DEFAULT']['N_proc'])
+bshell_b = config['DEFAULT']['bshell_b']
 debug = int(config['DEFAULT']['debug'])
+verbose = int(config['DEFAULT']['verbose'])
 n_zero = int(config['DEFAULT']['N_zero'])
 force = int(config['DEFAULT']['force'])
 
 def antsReg(img, mask, mov, outPrefix):
+
+    if verbose:
+        f= sys.stdout
+    else:
+        logFile= pjoin(outPrefix+ '_ANTs.log')
+        f= open(logFile, 'w')
+        print(f'See {logFile} for details of registration')
 
     if mask:
         p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
@@ -40,7 +50,7 @@ def antsReg(img, mask, mov, outPrefix):
                                '-x', mask,
                                '-m', mov,
                                '-o', outPrefix,
-                               '-e', '123456']), shell= True)
+                               '-e', '123456']), shell= True, stdout= f, stderr= sys.stdout)
         p.wait()
     else:
         p= Popen((' ').join(['antsRegistrationSyNQuick.sh',
@@ -48,8 +58,11 @@ def antsReg(img, mask, mov, outPrefix):
                                '-f', img,
                                '-m', mov,
                                '-o', outPrefix,
-                               '-e', '123456']), shell= True)
+                               '-e', '123456']), shell= True, stdout= f, stderr= sys.stdout)
         p.wait()
+
+    if f.name!='<sys.stdout>':
+        f.close()
 
 
 def antsApply(templatePath, directory, prefix):
@@ -220,6 +233,7 @@ def reconst(imgPath, maskPath, moving, templatePath):
     fixed = pjoin(directory, 'dti', f'{prefix}_FA.nii.gz')
     if force or not isfile(outPrefix+'1Warp.nii.gz'):
         antsReg(fixed, maskPath, moving, outPrefix)
+
     antsApply(templatePath, pjoin(directory, 'harm'), prefix)
 
     print(f'Reconstructing signal from {imgPath} rish features ...')

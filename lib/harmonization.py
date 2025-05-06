@@ -16,51 +16,14 @@
 from plumbum import cli
 from shutil import which
 import multiprocessing
-from conversion import read_imgs_masks
 import io
 
-from util import *
-
 from determineNshm import verifyNshmForAll, determineNshm
+from util import *
+from fileUtil import read_caselist, check_dir, check_csv
 
 N_CPU= multiprocessing.cpu_count()
 SCRIPTDIR= dirname(__file__)
-
-def check_csv(file, force):
-
-    with open(file) as f:
-        content= f.read()
-
-        for line, row in enumerate(content.split()):
-            dwi_mask= [element for element in row.split(',') if element] # handling w/space
-            if len(dwi_mask) != 2:
-                raise FileNotFoundError(f'Columns don\'t have same number of entries: check line {line} in {file}')
-
-            dirCheckFlag= 1
-            for img in dwi_mask:
-                if not exists(img):
-                    raise FileNotFoundError(f'{img} does not exist: check line {line} in {file}')
-
-                elif dirCheckFlag:
-                    # create DTI and harmonization directory
-                    dtiPath= pjoin(dirname(img),'dti')
-                    check_dir(dtiPath, force)
-
-                    harmPath= pjoin(dirname(img),'harm')
-                    check_dir(harmPath, force)
-
-                    dirCheckFlag= 0
-
-
-def check_dir(path, force):
-    if exists(path) and force:
-        warnings.warn(f'{path} exists and will be overwritten')
-        rmtree(path)
-        makedirs(path)
-    elif not exists(path):
-        makedirs(path)
-    else:
-        warnings.warn(f'{path} exists, --force not specified, continuing with existing directory')
 
 
 class pipeline(cli.Application):
@@ -92,7 +55,7 @@ class pipeline(cli.Application):
         ['--tar_list'],
         cli.ExistingFile,
         help='target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\\n dwi2,mask2\\n...',
-        mandatory=True)
+        mandatory=False)
 
     harm_csv = cli.SwitchAttr(
         ['--harm_list'],
@@ -107,8 +70,8 @@ class pipeline(cli.Application):
 
     N_shm = cli.SwitchAttr(
         ['--nshm'],
-        help='spherical harmonic order',
-        default= -1)
+        help='spherical harmonic order, by default maximum possible is used',
+        default= '-1')
 
     N_proc = cli.SwitchAttr(
         '--nproc',
@@ -145,6 +108,11 @@ class pipeline(cli.Application):
         help='turn on this flag to denoise voxel data',
         default= False)
 
+    bshell_b = cli.SwitchAttr(
+        '--bshell_b',
+        help='bvalue of the bshell, needed for multi-shell data only',
+        default= 'X')
+
     create = cli.Flag(
         '--create',
         help= 'turn on this flag to create template',
@@ -170,9 +138,10 @@ class pipeline(cli.Application):
         help= 'target site name',
         mandatory= True)
 
-    stats = cli.Flag(
-        '--stats',
-        help='print statistics of all sites, useful for recomputing --debug statistics separately')
+    verbose= cli.Flag(
+        '--verbose',
+        help='print everything to STDOUT',
+        default= False)
 
 
     diffusionMeasures = ['MD', 'FA', 'GFA']
@@ -198,13 +167,13 @@ class pipeline(cli.Application):
         if not self.ref_csv.endswith('.modified'):
             self.ref_csv += '.modified'
         # debug: use the following line to omit processing again
-        # refImgs, refMasks = read_imgs_masks(self.ref_csv)
+        # refImgs, refMasks = read_caselist(self.ref_csv)
 
         targetImgs, targetMasks= common_processing(self.tar_unproc_csv)
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
         # debug: use the following line to omit processing again
-        # targetImgs, targetMasks = read_imgs_masks(self.target_csv)
+        # targetImgs, targetMasks = read_caselist(self.target_csv)
 
         imgs= refImgs+targetImgs
         masks= refMasks+targetMasks
@@ -217,7 +186,7 @@ class pipeline(cli.Application):
 
         # ATTN: antsMultivariateTemplateConstruction2.sh requires '/' at the end of templatePath
         if not self.templatePath.endswith('/'):
-            self.templatePath= self.templatePath+ '/'
+            self.templatePath += '/'
         
         # check if template was created earlier
         prevTemplateFile= pjoin(self.templatePath, 'prevTemplateCompletion')
@@ -228,9 +197,9 @@ class pipeline(cli.Application):
         else:
             warnings.warn(f'Using {template0} which was created before')
             
-            
         # load templateHdr
-        templateHdr= load(pjoin(self.templatePath, 'template0.nii.gz')).header
+        templateHdr= load(template0).header
+
 
         # warp mask, dti, and rish bands
         if self.N_proc==1:
@@ -255,9 +224,9 @@ class pipeline(cli.Application):
         print('masking dti statistics of target site')
         templateMask= template_masking(refMaskPath, targetMaskPath, self.templatePath, self.target)
 
-        print('calculating rish_statistics i.e. mean, std calculation for reference site')
+        print('calculating rish_statistics i.e. mean, std calculation of reference site')
         rish_stat(self.reference, refImgs, self.templatePath, templateHdr)
-        print('calculating rish_statistics i.e. mean, std calculation for target site')
+        print('calculating rish_statistics i.e. mean, std calculation of target site')
         rish_stat(self.target, targetImgs, self.templatePath, templateHdr)
 
         print('calculating templates for diffusionMeasures')
@@ -273,7 +242,7 @@ class pipeline(cli.Application):
         if not isfile(prevTemplateFile):
             with open(prevTemplateFile, 'w'):
                 pass
-                
+
         print('\n\nTemplate creation completed \n\n')
 
 
@@ -289,12 +258,10 @@ class pipeline(cli.Application):
             if not listdir(self.templatePath):
                 raise ValueError(f'{self.templatePath} is empty')
 
-
-
         # fit spherical harmonics on reference site
         if self.debug and self.ref_csv:
             check_csv(self.ref_unproc_csv, self.force)
-            refImgs, refMasks= read_imgs_masks(self.ref_unproc_csv)
+            refImgs, refMasks= read_caselist(self.ref_unproc_csv)
 
             if self.N_proc==1:
                 attributes=[]
@@ -337,8 +304,8 @@ class pipeline(cli.Application):
 
         # reconstSignal steps ------------------------------------------------------------------------------------------
 
+        # read target image list
         moving= pjoin(self.templatePath, f'Mean_{self.target}_FA.nii.gz')
-
 
         if not self.target_csv.endswith('.modified'):
             self.target_csv += '.modified'
@@ -373,7 +340,7 @@ class pipeline(cli.Application):
         
         
         if self.debug:
-            harmImgs, harmMasks= read_imgs_masks(self.harm_csv)
+            harmImgs, harmMasks= read_caselist(self.harm_csv)
 
             if self.N_proc==1:
                 for imgPath,maskPath in zip(harmImgs,harmMasks):
@@ -402,7 +369,7 @@ class pipeline(cli.Application):
         print('\n\n Target site after harmonization')
         sub2tmp2mni(self.templatePath, self.target, self.harm_csv, tar_harm= True)
 
-        
+
         self.showStat()
 
 
@@ -411,7 +378,8 @@ class pipeline(cli.Application):
         from debug_fa import analyzeStat
         from datetime import datetime
         from harm_plot import generate_csv, harm_plot
-
+        import pandas as pd
+        
         print('\n\nComputing statistics:')
         
         print(f'{self.reference} site')
@@ -430,17 +398,16 @@ class pipeline(cli.Application):
         print('\n\nPrinting statistics:')
         # save statistics for future
         statFile= pjoin(self.templatePath, 'meanFAstat.csv')
-        with open(statFile, 'a') as f:
-            f.write(datetime.now().strftime('%m/%d/%y %H:%M')+',mean meanFA,std meanFA\n')
-            
-            f.write(f'{self.reference},{np.mean(ref_mean)},{np.std(ref_mean)}\n')
-            f.write(f'{self.target}_before,{np.mean(target_mean_before)},{np.std(target_mean_before)}\n')
-            f.write(f'{self.target}_after,{np.mean(target_mean_after)},{np.std(target_mean_after)}\n')
-            
-            # print an empty line so future results, if appended, are visually separate
-            f.write('\n')
+        timestamp= datetime.now().strftime('%m/%d/%y %H:%M')
+        sites= [f'{self.reference}',f'{self.target}_before',f'{self.target}_after']
+        df= pd.DataFrame({timestamp:sites})
+
+        header= f'mean meanFA b{self.bshell_b}'
+        value= [np.mean(x) for x in [ref_mean, target_mean_before, target_mean_after]]
+        df= df.assign(**{header:value})
+        df.to_csv(statFile, index=False)
         
-        
+
         # print statistics on console
         with open(statFile) as f:
             print(f.read())
@@ -457,9 +424,9 @@ class pipeline(cli.Application):
 
     def sanityCheck(self):
 
-        if not (self.create or self.process or self.debug or self.stats):
+        if not (self.create or self.process or self.debug):
             raise AttributeError('No option selected, ' 
-                                 'specify one (or many of) creation, harmonization, debug, and stats flags')
+                                 'specify one (or many of) creation, harmonization, and debug flags')
 
         # check ants commands
         external_commands= [
@@ -476,8 +443,8 @@ class pipeline(cli.Application):
 
 
     def main(self):
-        
-        self.sanityCheck()       
+    
+        self.sanityCheck()
 
         self.templatePath= abspath(self.templatePath)
         self.N_shm= int(self.N_shm)
@@ -489,44 +456,44 @@ class pipeline(cli.Application):
             self.ref_unproc_csv= self.ref_csv.strip('.modified')
         self.tar_unproc_csv= self.target_csv.strip('.modified')
 
-        if not self.stats:        
-            # check appropriateness of N_shm
-            if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
-                raise ValueError('2<= --nshm <=8')
+
+        # check appropriateness of N_shm
+        if self.N_shm!=-1 and (self.N_shm<2 or self.N_shm>8):
+            raise ValueError('2<= --nshm <=8')
 
 
-
-            # determine N_shm in default mode during template creation
-            if self.N_shm==-1 and self.create:
-                if self.ref_csv:
-                    ref_nshm_img = read_imgs_masks(self.ref_csv)[0][0]
-                elif self.target_csv:
-                    ref_nshm_img = read_imgs_masks(self.target_csv)[0][0]
-
-                directory= dirname(ref_nshm_img)
-                prefix= basename(ref_nshm_img).split('.nii')[0]
-                bvalFile= pjoin(directory, prefix+'.bval')
-                self.N_shm, _= determineNshm(bvalFile)
-
-
-            # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
-            # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
-            elif self.N_shm==-1 and self.process:
-                for i in range(0,8,2):
-                    if isfile(pjoin(self.templatePath, f'Scale_L{i}.nii.gz')):
-                        self.N_shm= i
-                    else:
-                        break
-
-
-            # verify validity of provided/determined N_shm for all subjects
-            # single-shell-ness is verified inside verifyNshmForAll
+        # determine N_shm in default mode during template creation
+        if self.N_shm==-1 and self.create:
             if self.ref_csv:
-                verifyNshmForAll(self.ref_csv, self.N_shm)
-            if self.target_csv:
-                verifyNshmForAll(self.target_csv, self.N_shm)
+                ref_nshm_img = read_caselist(self.ref_csv)[0][0]
+            elif self.target_csv:
+                ref_nshm_img = read_caselist(self.target_csv)[0][0]
 
-        # copy provided config file to temporary directory
+            directory= dirname(ref_nshm_img)
+            prefix= basename(ref_nshm_img).split('.nii')[0]
+            bvalFile= pjoin(directory, prefix+'.bval')
+            self.N_shm, _= determineNshm(bvalFile)
+
+
+        # automatic determination of N_shm during data harmonization is limited by N_shm used during template creation
+        # Scale_L{i}.nii.gz of <= {N_shm during template creation} are present only
+        elif self.N_shm==-1 and self.process:
+            for i in range(0,8,2):
+                if isfile(pjoin(self.templatePath, f'Scale_L{i}.nii.gz')):
+                    self.N_shm= i
+                else:
+                    break
+
+
+        # verify validity of provided/determined N_shm for all subjects
+        # single-shell-ness is verified inside verifyNshmForAll
+        if self.ref_csv:
+            verifyNshmForAll(self.ref_csv, self.N_shm)
+        if self.target_csv:
+            verifyNshmForAll(self.target_csv, self.N_shm)
+
+
+        # write config file to temporary directory
         configFile= pjoin(gettempdir(),f'harm_config_{getpid()}.ini')
         with open(configFile,'w') as f:
             f.write('[DEFAULT]\n')
@@ -535,10 +502,12 @@ class pipeline(cli.Application):
             f.write(f'N_zero = {self.N_zero}\n')
             f.write(f'resample = {self.resample if self.resample else 0}\n')
             f.write(f'bvalMap = {self.bvalMap if self.bvalMap else 0}\n')
+            f.write(f'bshell_b = {self.bshell_b}\n')
             f.write(f'denoise = {1 if self.denoise else 0}\n')
             f.write(f'travelHeads = {1 if self.travelHeads else 0}\n')
             f.write(f'debug = {1 if self.debug else 0}\n')
             f.write(f'force = {1 if self.force else 0}\n')
+            f.write(f'verbose = {1 if self.verbose else 0}\n')
             f.write('diffusionMeasures = {}\n'.format((',').join(self.diffusionMeasures)))
 
 
@@ -558,14 +527,9 @@ class pipeline(cli.Application):
         if self.create and self.process and self.debug:
             self.post_debug()
 
-        if self.stats:
-            if (self.create or self.process or self.debug):
-                raise AttributeError('--stats option is for recomputing site statistics exclusively')
-            else:
-                self.showStat()
 
         remove(configFile)
-        
+
 
 if __name__ == '__main__':
     pipeline.run()
