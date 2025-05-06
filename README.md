@@ -4,6 +4,8 @@
 
 *dMRIharmonization* repository is developed by Tashrif Billah, Sylvain Bouix, Suheyla Cetin Karayumak, and Yogesh Rathi, Brigham and Women's Hospital (Harvard Medical School).
 
+All codes have been centralized at [multi-shell-dMRIharmonization](https://github.com/pnlbwh/multi-shell-dMRIharmonization). Please use that repository.
+
 Table of Contents
 =================
 
@@ -25,7 +27,6 @@ Table of Contents
    * [Running](#running)
    * [Tests](#tests)
       * [1. pipeline](#1-pipeline)
-      * [2. unittest](#2-unittest)
    * [List of images](#list-of-images)
    * [Site names](#site-names)
    * [Multi threading](#multi-threading)
@@ -127,7 +128,7 @@ demographic variable.
    (e.g. if one site has b-value 1000, the other one should have in the range [900,1100]).
 
 
-If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/dMRIharmonization/issues) or contact -
+If your data does not satisfy these requirements, please open an issue [here](https://github.com/pnlbwh/multi-shell-dMRIharmonization/issues) or contact -
 
 *skarayumak[at]bwh[dot]harvard[dot]edu*
 
@@ -163,7 +164,7 @@ You may ignore installation instruction for any software module that you have al
 
 ### Python 3
 
-Download [Miniconda Python 3.6 bash installer](https://docs.conda.io/en/latest/miniconda.html) (32/64-bit based on your environment):
+Download [Miniconda Python 3 bash installer](https://docs.conda.io/en/latest/miniconda.html) (32/64-bit based on your environment):
     
     sh Miniconda3-latest-Linux-x86_64.sh -b # -b flag is for license agreement
 
@@ -188,12 +189,11 @@ Download a suitable version from the above, and install as follows:
 
 See details about installation [here](https://www.mathworks.com/help/compiler/install-the-matlab-runtime.html).
 
-After successful installation, you should see a suggestion about editing your LD_LIBRARY_PATH. 
-You should save the suggestion in a file `env.sh`.
+After successful installation, you should set `MCRROOT` in an environment file:
 
-    echo "export LD_LIBRARY_PATH=/path/to/v92/runtime/glnxa64:/path/to/v92/bin/glnxa64:/path/to/v92/sys/os/glnxa64:/path/to/v92/sys/opengl/lib/glnxa64:\${LD_LIBRARY_PATH}" > env.sh
+    echo "export MCRROOT=/path/to/v92" > env.sh
 
-Then, every time you run dMRIharmonization, you can just `source /path/to/env.sh` for your LD_LIBRARY_PATH to be updated.
+Then, every time you run dMRIharmonization, you can just `source /path/to/env.sh` so that `bspline` can execute.
 
 
 ### unringing
@@ -207,28 +207,13 @@ You should be able to see the help message now:
     unring.a64 --help
 
 
-**NOTE** FSL unringing executable requires Centos7 operating system.
+**NOTE** FSL unringing executable requires CentOS 7 or higher operating system e.g. RHEL 9.
     
     
 ## 2. Install pipeline
 
-Now that you have installed the prerequisite software, you are ready to install the pipeline:
-
-    git clone https://github.com/pnlbwh/dMRIharmonization.git && cd dMRIharmonization
-    conda env create -f environment.yml    # you may comment out any existing package from environment.yml
-    conda activate harmonization           # should introduce '(harmonization)' in front of each line
-
-
-Alternatively, if you already have ANTs, you can continue using your python environment by directly installing 
-the prerequisite libraries:
-
-    pip install -r requirements.txt --upgrade
-
-
-**NOTE** If other people will run *dMRIharmonization* in your lab, it may be useful to change permission of the configuration file:
-
-    chmod +w dMRIharmonization/lib/config.ini
-
+Now that you have installed the prerequisite software, you are ready to install the conda environment.
+For that, we ask you to follow the [Singularity](https://github.com/pnlbwh/dMRIharmonization/blob/7dad77905e5b5d23b58c705abcd3883b6054cad2/Singularity) file
 
 
 ## 3. Download IIT templates
@@ -259,7 +244,7 @@ If any of them does not exist, add that to your path:
 
     export PATH=$PATH:/directory/of/executable
     
-`conda activate harmonization` should already put the ANTs scripts in your path. Yet, you should set ANTSPATH as follows:
+Also, you should set `ANTSPATH` as follows:
     
     export ANTSPATH=~/miniconda3/envs/harmonization/bin/
 
@@ -283,28 +268,25 @@ Upon successful installation, you should be able to see the help message
         -v, --version                       Prints the program's version and quits
     
     Switches:
+        --bshell_b VALUE:str                bvalue of the bshell, needed for multi-shell data only; the default is X
         --bvalMap VALUE:str                 specify a bmax to scale bvalues into
         --create                            turn on this flag to create template
         --debug                             turn on this flag to debug harmonized data (valid only with --process)
         --denoise                           turn on this flag to denoise voxel data
         --force                             turn on this flag to overwrite existing data
-        --harm_list VALUE:ExistingFile      harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...
-        --nproc VALUE:str                   number of processes/threads to use (-1 for all available, may slow down your system);
-                                            the default is 8
-        --nshm VALUE:str                    spherical harmonic order; the default is 6
+        --harm_list VALUE:ExistingFile      harmonized csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\n dwi2,mask2\n...
+        --nproc VALUE:str                   number of processes/threads to use (-1 for all available, may slow down your system); the default is 4
+        --nshm VALUE:str                    spherical harmonic order, by default maximum possible is used; the default is -1
         --nzero VALUE:str                   number of zero padding for denoising skull region during signal reconstruction; the default is 10
         --process                           turn on this flag to harmonize
-        --ref_list VALUE:ExistingFile       reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...
-        --ref_name VALUE:str                reference site name; required
+        --ref_list VALUE:ExistingFile       reference csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\n dwi2,mask2\n...
+        --ref_name VALUE:str                reference site name
         --resample VALUE:str                voxel size MxNxO to resample into
-        --stats                             print statistics of all sites, useful for recomputing --debug statistics separately
-        --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1
-                                            dwi2,mask2 ...
+        --tar_list VALUE:ExistingFile       target csv/txt file with first column for dwi and 2nd column for mask: dwi1,mask1\n dwi2,mask2\n...
         --tar_name VALUE:str                target site name; required
         --template VALUE:str                template directory; required
         --travelHeads                       travelling heads
+        --verbose                           print everything to STDOUT
 
 
 The `harmonization.py` cli takes in the following arguments that are explained below.
@@ -335,10 +317,10 @@ A number of use cases can be found in [pipeline_test.sh](./lib/tests/pipeline_te
 
 # Tests
 
-A small test data is provided with each [release](https://github.com/pnlbwh/Harmonization-Python/releases). 
+A small test data is provided with each [release](https://github.com/pnlbwh/dMRIharmonization/releases).
 
 ## 1. pipeline
-You may test the whole pipeline as follows*:
+You may test the whole pipeline as follows:
     
     cd lib/tests
     ./pipeline_test.sh
@@ -370,12 +352,6 @@ As you see in the above, after harmonization, target site (PRISMA) meanFA came c
 
 **NOTE** If there is any problem downloading test data, try manually downloading and unzipping it to `lib/tests/` folder.
 
-
-## 2. unittest
-You may run smaller and faster unittest as follows:
-    
-    python -m unittest discover -v lib/tests/    
-    
 
 # List of images
 
