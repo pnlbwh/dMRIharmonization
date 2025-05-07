@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite as below. * denotes equal first authroship."
+authors:
+- family-names: "Billah"
+  given-names: "T*"
+- family-names: "Cetin Karayumak"
+  given-names: "S*"
+- family-names: "Bouix"
+  given-names: "S"
+- family-names: "Rathi"
+  given-names: "Y"
+title: "Multi-site Diffusion MRI Harmonization"
+doi: 10.5281/zenodo.2584275
+date-released: 2019
+url: "https://github.com/pnlbwh/dMRIharmonization"
