@@ -24,7 +24,7 @@ From: redhat/ubi9:9.5-1738643550
     rm -rf /var/cache/yum
 
     REPO=dMRIharmonization
-    git clone --single-branch --branch shutil-and-bspline https://github.com/pnlbwh/$REPO.git
+    git clone --single-branch --branch master https://github.com/pnlbwh/$REPO.git
 
     # conda environment
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
