@@ -219,7 +219,7 @@ For that, we ask you to follow the [Singularity](https://github.com/pnlbwh/dMRIh
 ## 3. Download IIT templates
 
 dMRIharmonization toolbox is provided with a debugging capability to test how good has been the 
-harmonization. For debug to work and **tests** to run, download the following data from [IIT Human Brain Atlas](https://www.nitrc.org/projects/iit) 
+harmonization. For debug to work and **tests** to run, download the following data
 and place them in `dMRIharmonization/IITAtlas/` directory:
 
 
